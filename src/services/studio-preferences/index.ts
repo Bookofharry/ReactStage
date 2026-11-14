@@ -1,0 +1,17 @@
+export {
+  BUILT_IN_STUDIO_PRESETS,
+  MAX_CUSTOM_PRESETS,
+  MAX_PRESET_NAME_LENGTH,
+  STUDIO_PREFERENCES_SCHEMA_VERSION,
+  STUDIO_PREFERENCES_STORAGE_KEY,
+  StudioPreferencesStore,
+  areWorkspaceProfilesEqual,
+  createDefaultWorkspaceProfile,
+  sanitizePresetName,
+  sanitizeWorkspaceProfile,
+  type StorageLike,
+  type StudioPreferencesSnapshot,
+  type StudioPreferencesStoreOptions,
+  type StudioSavedPreset,
+  type StudioWorkspaceProfile,
+} from './studio-preferences-store';
