@@ -31,12 +31,14 @@ import { useSourcePlayback } from '../state/PlaybackContext';
 import { useRecordingSession } from '../state/RecordingSessionContext';
 import {
   MAX_LOWER_THIRD_TEXT_LENGTH,
+  MAX_TELEPROMPTER_SCRIPT_LENGTH,
   SUPPORTED_SCENE_RESOLUTIONS,
   SUPPORTED_TELESTRATOR_COLORS,
   type PipBorderStyle,
   type PipFrameShape,
   type SceneResolutionPreset,
   type StageLayoutMode,
+  type TeleprompterFontSize,
   type TelestratorTool,
 } from '../types/media';
 import { formatBytes } from '../utils/format';
@@ -50,10 +52,12 @@ import {
   LayoutPipIcon,
   LayoutSourceIcon,
   LayoutSplitIcon,
+  LayoutVerticalStackIcon,
   LowerThirdIcon,
   PenToolIcon,
   ResizeCornerIcon,
   ScreenShareIcon,
+  TeleprompterIcon,
   TrashIcon,
   UndoIcon,
   UploadVideoIcon,
@@ -77,6 +81,7 @@ const LAYOUT_OPTIONS: readonly {
   { mode: 'camera-only', label: 'Webcam Only' },
   { mode: 'pip', label: 'Picture-in-Picture' },
   { mode: 'side-by-side', label: 'Side-by-Side' },
+  { mode: 'top-bottom', label: 'Top / Bottom' },
 ];
 
 const PIP_CORNER_OPTIONS: readonly {
@@ -139,6 +144,8 @@ function renderLayoutIcon(mode: StageLayoutMode) {
       return <LayoutPipIcon className={cls} />;
     case 'side-by-side':
       return <LayoutSplitIcon className={cls} />;
+    case 'top-bottom':
+      return <LayoutVerticalStackIcon className={cls} />;
   }
 }
 
@@ -152,6 +159,8 @@ function getLayoutDisplayName(mode: StageLayoutMode): string {
       return 'Picture-in-Picture';
     case 'side-by-side':
       return 'Side-by-Side';
+    case 'top-bottom':
+      return 'Top / Bottom';
   }
 }
 
@@ -285,6 +294,9 @@ export function SceneStagePanel() {
     resetSplitRatio,
     setLowerThird,
     toggleLowerThird,
+    teleprompter,
+    setTeleprompter,
+    toggleTeleprompter,
     captureSnapshotPng,
     addAnnotation,
     undoAnnotation,
@@ -296,6 +308,7 @@ export function SceneStagePanel() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const stageViewportRef = useRef<HTMLDivElement | null>(null);
+  const teleprompterViewportRef = useRef<HTMLDivElement | null>(null);
   const dragDepthRef = useRef(0);
   const activeGestureRef = useRef<ActivePointerGesture | null>(null);
   const activeStrokeRef = useRef<ActiveAnnotationStroke | null>(null);
@@ -305,6 +318,44 @@ export function SceneStagePanel() {
   const [isDraggingFileOver, setIsDraggingFileOver] = useState(false);
   const [isInteractingPip, setIsInteractingPip] = useState(false);
   const [snapshotJustSaved, setSnapshotJustSaved] = useState(false);
+  const [isTeleprompterScrolling, setIsTeleprompterScrolling] = useState(false);
+
+  useEffect(() => {
+    if (!teleprompter.enabled || !isTeleprompterScrolling) {
+      return undefined;
+    }
+    let rafId = 0;
+    let lastTs = 0;
+    const step = (ts: number) => {
+      const container = teleprompterViewportRef.current;
+      if (!container) {
+        return;
+      }
+      if (lastTs > 0) {
+        const dtSec = Math.min(0.1, Math.max(0, (ts - lastTs) / 1000));
+        const pxPerSec = 10 + teleprompter.scrollSpeed * 12;
+        const maxScroll = Math.max(
+          0,
+          container.scrollHeight - container.clientHeight,
+        );
+        if (maxScroll > 0) {
+          const nextTop = container.scrollTop + pxPerSec * dtSec;
+          if (nextTop >= maxScroll) {
+            container.scrollTop = maxScroll;
+            setIsTeleprompterScrolling(false);
+            return;
+          }
+          container.scrollTop = nextTop;
+        }
+      }
+      lastTs = ts;
+      rafId = window.requestAnimationFrame(step);
+    };
+    rafId = window.requestAnimationFrame(step);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [isTeleprompterScrolling, teleprompter.enabled, teleprompter.scrollSpeed]);
 
   useEffect(() => {
     return () => {
@@ -337,14 +388,17 @@ export function SceneStagePanel() {
     captureSnapshot.cameraStatus === 'active' &&
     captureSnapshot.activeCameraStream !== null;
 
-  // Show centered onboarding prompt only when neither source, camera, Lower-Third, nor active Telestrator is on stage
+  // Show centered onboarding prompt only when neither source, camera, Lower-Third, Teleprompter, nor active Telestrator is on stage
   const showCenteredEmptyPrompt =
     activeTool === 'none' &&
     compositorState.annotationCount === 0 &&
     !compositorState.lowerThird.enabled &&
+    !teleprompter.enabled &&
     playback.status === 'empty' &&
     !isCameraActive &&
     compositorState.layoutMode !== 'camera-only';
+
+  const isPortraitStage = compositorState.height > compositorState.width;
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();
@@ -938,6 +992,21 @@ export function SceneStagePanel() {
 
           <button
             type="button"
+            data-testid="teleprompter-toggle-button"
+            aria-pressed={teleprompter.enabled}
+            onClick={toggleTeleprompter}
+            className={
+              teleprompter.enabled
+                ? 'inline-flex min-h-7 items-center gap-1 rounded-md bg-sky-400 px-2.5 py-1 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300'
+                : 'inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400'
+            }
+          >
+            <TeleprompterIcon className="h-3 w-3 shrink-0" />
+            <span>Teleprompter</span>
+          </button>
+
+          <button
+            type="button"
             data-testid="telestrator-undo-button"
             disabled={compositorState.annotationCount === 0}
             onClick={() => {
@@ -1017,6 +1086,119 @@ export function SceneStagePanel() {
         </div>
       )}
 
+      {/* Contextual Non-Recorded Eye-Line Teleprompter Editor */}
+      {teleprompter.enabled && (
+        <div
+          data-testid="teleprompter-controls-bar"
+          className="flex flex-col gap-2 border-b border-slate-800 bg-slate-950/80 px-3 py-2.5 sm:px-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label
+              htmlFor="teleprompter-script-input"
+              className="text-xs font-semibold text-sky-300"
+            >
+              Eye-Line Talking Points (Never Recorded onto Canvas)
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                data-testid="teleprompter-scroll-toggle"
+                aria-pressed={isTeleprompterScrolling}
+                onClick={() => {
+                  setIsTeleprompterScrolling((prev) => !prev);
+                }}
+                className={
+                  isTeleprompterScrolling
+                    ? 'rounded-md bg-emerald-400 px-2.5 py-1 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-300'
+                    : 'rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400'
+                }
+              >
+                {isTeleprompterScrolling ? 'Pause Scroll' : 'Auto-Scroll'}
+              </button>
+
+              <button
+                type="button"
+                data-testid="teleprompter-reset-scroll"
+                onClick={() => {
+                  setIsTeleprompterScrolling(false);
+                  if (teleprompterViewportRef.current) {
+                    teleprompterViewportRef.current.scrollTop = 0;
+                  }
+                }}
+                className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+              >
+                Reset Top
+              </button>
+
+              <div className="flex items-center gap-1.5">
+                <label
+                  htmlFor="teleprompter-speed-slider"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Speed
+                </label>
+                <input
+                  id="teleprompter-speed-slider"
+                  data-testid="teleprompter-speed-slider"
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={teleprompter.scrollSpeed}
+                  onChange={(event) => {
+                    setTeleprompter({
+                      scrollSpeed: Number(event.currentTarget.value),
+                    });
+                  }}
+                  className="h-2 w-20 cursor-pointer rounded-lg bg-slate-800"
+                />
+                <span className="font-mono text-xs text-slate-200 tabular-nums">
+                  {teleprompter.scrollSpeed}x
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <label
+                  htmlFor="teleprompter-size-select"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Font
+                </label>
+                <select
+                  id="teleprompter-size-select"
+                  data-testid="teleprompter-size-select"
+                  value={teleprompter.fontSize}
+                  onChange={(event) => {
+                    setTeleprompter({
+                      fontSize: event.currentTarget.value as TeleprompterFontSize,
+                    });
+                  }}
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs font-medium text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+                >
+                  <option value="sm">Compact</option>
+                  <option value="md">Medium</option>
+                  <option value="lg">Large</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <textarea
+            id="teleprompter-script-input"
+            data-testid="teleprompter-script-input"
+            rows={2}
+            maxLength={MAX_TELEPROMPTER_SCRIPT_LENGTH}
+            value={teleprompter.scriptText}
+            onChange={(event) => {
+              setTeleprompter({ scriptText: event.currentTarget.value });
+            }}
+            placeholder="Paste talking points, timestamps, or reaction outline…"
+            className="w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs leading-relaxed text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+          />
+        </div>
+      )}
+
       {/* Compositor or Playback Inline Error Alerts */}
       {compositorState.lastError && (
         <div
@@ -1055,18 +1237,21 @@ export function SceneStagePanel() {
         </div>
       )}
 
-      {/* Dominant Single Composed 16:9 Scene Viewport */}
-      <div
-        ref={stageViewportRef}
-        data-testid="source-dropzone"
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`relative flex aspect-video w-full items-center justify-center overflow-hidden bg-slate-950 ${
-          isDraggingFileOver ? 'ring-2 ring-sky-400 ring-inset' : ''
-        }`}
-      >
+      {/* Dominant Single Composed Scene Viewport (16:9 Landscape or 9:16 Vertical Shorts) */}
+      <div className="w-full bg-slate-950">
+        <div
+          ref={stageViewportRef}
+          data-testid="source-dropzone"
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative flex items-center justify-center overflow-hidden bg-slate-950 ${
+            isPortraitStage
+              ? 'mx-auto aspect-[9/16] max-h-[540px] w-full max-w-[304px] border-x border-slate-800/80'
+              : 'aspect-video w-full'
+          } ${isDraggingFileOver ? 'ring-2 ring-sky-400 ring-inset' : ''}`}
+        >
         {/* Backing local video element borrowed read-only by SceneCompositor */}
         <video
           ref={videoRef}
@@ -1266,7 +1451,45 @@ export function SceneStagePanel() {
           </div>
         )}
 
+        {/* Non-Recorded Top-Center Eye-Line Teleprompter HUD Overlay */}
+        {teleprompter.enabled && (
+          <div
+            data-testid="teleprompter-stage-overlay"
+            className="pointer-events-auto absolute top-2.5 left-1/2 z-20 flex w-[92%] max-w-xl -translate-x-1/2 flex-col rounded-xl border border-sky-400/35 bg-slate-950/85 px-3 py-2 text-slate-100 shadow-xl backdrop-blur-xs"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-slate-800/90 pb-1">
+              <span className="text-[10px] font-semibold tracking-wider text-sky-300 uppercase">
+                Eye-Line Prompter · Not Recorded
+              </span>
+              <button
+                type="button"
+                data-testid="teleprompter-hud-hide"
+                onClick={toggleTeleprompter}
+                className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-slate-300 hover:bg-slate-800 hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+              >
+                Hide (T)
+              </button>
+            </div>
+            <div
+              ref={teleprompterViewportRef}
+              data-testid="teleprompter-hud-viewport"
+              className={`mt-1.5 max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed font-medium text-slate-100 sm:max-h-28 ${
+                teleprompter.fontSize === 'lg'
+                  ? 'text-sm sm:text-base'
+                  : teleprompter.fontSize === 'sm'
+                    ? 'text-[11px] sm:text-xs'
+                    : 'text-xs sm:text-sm'
+              }`}
+            >
+              {teleprompter.scriptText.trim().length > 0
+                ? teleprompter.scriptText
+                : 'Add talking points in the Teleprompter bar above.'}
+            </div>
+          </div>
+        )}
+
         <StagePreRollOverlay />
+        </div>
       </div>
 
       {/* Contextual PIP Geometry Controls */}
@@ -1369,8 +1592,9 @@ export function SceneStagePanel() {
         </div>
       )}
 
-      {/* Contextual Side-by-Side Split Ratio Controls */}
-      {compositorState.layoutMode === 'side-by-side' && (
+      {/* Contextual Side-by-Side or Top/Bottom Split Ratio Controls */}
+      {(compositorState.layoutMode === 'side-by-side' ||
+        compositorState.layoutMode === 'top-bottom') && (
         <div
           data-testid="split-controls-bar"
           className="flex flex-col gap-2 border-t border-slate-800 bg-slate-950/70 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4"
@@ -1398,7 +1622,9 @@ export function SceneStagePanel() {
               data-testid="split-ratio-readout"
               className="font-mono text-xs font-medium text-slate-100 tabular-nums"
             >
-              {splitLeftPercent}% Source / {splitRightPercent}% Webcam
+              {compositorState.layoutMode === 'top-bottom'
+                ? `${splitLeftPercent}% Top Source / ${splitRightPercent}% Bottom Webcam`
+                : `${splitLeftPercent}% Source / ${splitRightPercent}% Webcam`}
             </span>
           </div>
 

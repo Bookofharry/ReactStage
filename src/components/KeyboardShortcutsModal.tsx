@@ -29,8 +29,13 @@ const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { keys: ['2'], description: 'Side-by-Side Split layout' },
       { keys: ['3'], description: 'Source Video Only layout' },
       { keys: ['4'], description: 'Webcam Only layout' },
+      { keys: ['5'], description: 'Top / Bottom Vertical Shorts layout' },
       { keys: ['D'], description: 'Toggle stage Telestrator freehand pen' },
       { keys: ['L'], description: 'Toggle on-canvas Lower-Third title banner' },
+      {
+        keys: ['T'],
+        description: 'Toggle non-recorded Eye-Line Teleprompter HUD',
+      },
       { keys: ['Z', 'Ctrl+Z'], description: 'Undo last stage annotation' },
       { keys: ['C'], description: 'Clear all stage annotations' },
     ],

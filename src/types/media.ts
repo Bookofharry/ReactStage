@@ -78,7 +78,8 @@ export type StageLayoutMode =
   | 'source-only'
   | 'camera-only'
   | 'pip'
-  | 'side-by-side';
+  | 'side-by-side'
+  | 'top-bottom';
 
 export type PipFrameShape = 'rect' | 'rounded' | 'circle';
 
@@ -114,7 +115,30 @@ export const DEFAULT_STAGE_LOWER_THIRD: StageLowerThirdConfig = {
   subtitle: 'ReactStage Studio',
 };
 
-export type SceneResolutionPreset = '720p' | '1080p';
+export type TeleprompterFontSize = 'sm' | 'md' | 'lg';
+
+export const MAX_TELEPROMPTER_SCRIPT_LENGTH = 4000;
+
+export interface StageTeleprompterConfig {
+  readonly enabled: boolean;
+  readonly scriptText: string;
+  readonly scrollSpeed: number;
+  readonly fontSize: TeleprompterFontSize;
+}
+
+export const DEFAULT_STAGE_TELEPROMPTER: StageTeleprompterConfig = {
+  enabled: false,
+  scriptText:
+    '1. Hook & first impression\n2. Pause at key moment to explain trade-offs\n3. Final takeaway & summary',
+  scrollSpeed: 2,
+  fontSize: 'md',
+};
+
+export type SceneResolutionPreset =
+  | '720p'
+  | '1080p'
+  | '720p-vertical'
+  | '1080p-vertical';
 
 export interface SceneResolutionOption {
   readonly id: SceneResolutionPreset;
@@ -126,6 +150,18 @@ export interface SceneResolutionOption {
 export const SUPPORTED_SCENE_RESOLUTIONS: readonly SceneResolutionOption[] = [
   { id: '720p', label: '1280×720 (720p)', width: 1280, height: 720 },
   { id: '1080p', label: '1920×1080 (1080p)', width: 1920, height: 1080 },
+  {
+    id: '720p-vertical',
+    label: '720×1280 (9:16 Shorts)',
+    width: 720,
+    height: 1280,
+  },
+  {
+    id: '1080p-vertical',
+    label: '1080×1920 (9:16 Reels)',
+    width: 1080,
+    height: 1920,
+  },
 ] as const;
 
 /**

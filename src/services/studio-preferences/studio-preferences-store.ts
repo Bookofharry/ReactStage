@@ -12,11 +12,14 @@ import {
 } from '../scene-compositor';
 import {
   DEFAULT_STAGE_LOWER_THIRD,
+  DEFAULT_STAGE_TELEPROMPTER,
   MAX_LOWER_THIRD_TEXT_LENGTH,
+  MAX_TELEPROMPTER_SCRIPT_LENGTH,
   type PipBorderStyle,
   type PipFrameShape,
   type SceneResolutionPreset,
   type StageLayoutMode,
+  type TeleprompterFontSize,
 } from '../../types/media';
 
 export const STUDIO_PREFERENCES_STORAGE_KEY =
@@ -47,6 +50,10 @@ export interface StudioWorkspaceProfile {
   readonly lowerThirdEnabled: boolean;
   readonly lowerThirdTitle: string;
   readonly lowerThirdSubtitle: string;
+  readonly teleprompterEnabled: boolean;
+  readonly teleprompterScript: string;
+  readonly teleprompterScrollSpeed: number;
+  readonly teleprompterFontSize: TeleprompterFontSize;
   readonly mirrorPreview: boolean;
   readonly preRollEnabled: boolean;
   readonly shortcutsEnabled: boolean;
@@ -84,6 +91,7 @@ export interface StudioPreferencesStoreOptions {
 const VALID_LAYOUT_MODES: readonly StageLayoutMode[] = [
   'pip',
   'side-by-side',
+  'top-bottom',
   'source-only',
   'camera-only',
 ];
@@ -91,6 +99,14 @@ const VALID_LAYOUT_MODES: readonly StageLayoutMode[] = [
 const VALID_RESOLUTION_PRESETS: readonly SceneResolutionPreset[] = [
   '720p',
   '1080p',
+  '720p-vertical',
+  '1080p-vertical',
+];
+
+const VALID_TELEPROMPTER_FONT_SIZES: readonly TeleprompterFontSize[] = [
+  'sm',
+  'md',
+  'lg',
 ];
 
 const VALID_PIP_SHAPES: readonly PipFrameShape[] = [
@@ -213,6 +229,40 @@ function sanitizeLowerThirdText(raw: unknown, fallback: string): string {
   return cleaned.slice(0, MAX_LOWER_THIRD_TEXT_LENGTH);
 }
 
+function sanitizeTeleprompterScript(raw: unknown, fallback: string): string {
+  if (typeof raw !== 'string') {
+    return fallback;
+  }
+  let cleaned = '';
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    if ((code >= 0x20 && code !== 0x7f) || ch === '\n' || ch === '\t') {
+      cleaned += ch;
+    }
+  }
+  return cleaned.slice(0, MAX_TELEPROMPTER_SCRIPT_LENGTH);
+}
+
+function sanitizeTeleprompterSpeed(raw: unknown, fallback: number): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) {
+    return fallback;
+  }
+  return Math.min(5, Math.max(1, Math.round(raw)));
+}
+
+function sanitizeTeleprompterFontSize(
+  raw: unknown,
+  fallback: TeleprompterFontSize,
+): TeleprompterFontSize {
+  if (
+    typeof raw === 'string' &&
+    (VALID_TELEPROMPTER_FONT_SIZES as readonly string[]).includes(raw)
+  ) {
+    return raw as TeleprompterFontSize;
+  }
+  return fallback;
+}
+
 export function createDefaultWorkspaceProfile(): StudioWorkspaceProfile {
   return {
     layoutMode: 'pip',
@@ -230,6 +280,10 @@ export function createDefaultWorkspaceProfile(): StudioWorkspaceProfile {
     lowerThirdEnabled: DEFAULT_STAGE_LOWER_THIRD.enabled,
     lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
     lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
+    teleprompterEnabled: DEFAULT_STAGE_TELEPROMPTER.enabled,
+    teleprompterScript: DEFAULT_STAGE_TELEPROMPTER.scriptText,
+    teleprompterScrollSpeed: DEFAULT_STAGE_TELEPROMPTER.scrollSpeed,
+    teleprompterFontSize: DEFAULT_STAGE_TELEPROMPTER.fontSize,
     mirrorPreview: true,
     preRollEnabled: false,
     shortcutsEnabled: true,
@@ -290,6 +344,22 @@ export function sanitizeWorkspaceProfile(raw: unknown): StudioWorkspaceProfile {
       raw.lowerThirdSubtitle,
       defaults.lowerThirdSubtitle,
     ),
+    teleprompterEnabled:
+      typeof raw.teleprompterEnabled === 'boolean'
+        ? raw.teleprompterEnabled
+        : defaults.teleprompterEnabled,
+    teleprompterScript: sanitizeTeleprompterScript(
+      raw.teleprompterScript,
+      defaults.teleprompterScript,
+    ),
+    teleprompterScrollSpeed: sanitizeTeleprompterSpeed(
+      raw.teleprompterScrollSpeed,
+      defaults.teleprompterScrollSpeed,
+    ),
+    teleprompterFontSize: sanitizeTeleprompterFontSize(
+      raw.teleprompterFontSize,
+      defaults.teleprompterFontSize,
+    ),
     mirrorPreview:
       typeof raw.mirrorPreview === 'boolean'
         ? raw.mirrorPreview
@@ -328,6 +398,10 @@ export function areWorkspaceProfilesEqual(
     a.lowerThirdEnabled === b.lowerThirdEnabled &&
     a.lowerThirdTitle === b.lowerThirdTitle &&
     a.lowerThirdSubtitle === b.lowerThirdSubtitle &&
+    a.teleprompterEnabled === b.teleprompterEnabled &&
+    a.teleprompterScript === b.teleprompterScript &&
+    a.teleprompterScrollSpeed === b.teleprompterScrollSpeed &&
+    a.teleprompterFontSize === b.teleprompterFontSize &&
     a.mirrorPreview === b.mirrorPreview &&
     a.preRollEnabled === b.preRollEnabled &&
     a.shortcutsEnabled === b.shortcutsEnabled
@@ -358,6 +432,10 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       lowerThirdEnabled: false,
       lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
       lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
+      teleprompterEnabled: false,
+      teleprompterScript: DEFAULT_STAGE_TELEPROMPTER.scriptText,
+      teleprompterScrollSpeed: DEFAULT_STAGE_TELEPROMPTER.scrollSpeed,
+      teleprompterFontSize: DEFAULT_STAGE_TELEPROMPTER.fontSize,
       mirrorPreview: true,
       preRollEnabled: true,
       shortcutsEnabled: true,
@@ -385,6 +463,10 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       lowerThirdEnabled: false,
       lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
       lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
+      teleprompterEnabled: false,
+      teleprompterScript: DEFAULT_STAGE_TELEPROMPTER.scriptText,
+      teleprompterScrollSpeed: DEFAULT_STAGE_TELEPROMPTER.scrollSpeed,
+      teleprompterFontSize: DEFAULT_STAGE_TELEPROMPTER.fontSize,
       mirrorPreview: true,
       preRollEnabled: false,
       shortcutsEnabled: true,
@@ -413,6 +495,42 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       lowerThirdEnabled: false,
       lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
       lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
+      teleprompterEnabled: false,
+      teleprompterScript: DEFAULT_STAGE_TELEPROMPTER.scriptText,
+      teleprompterScrollSpeed: DEFAULT_STAGE_TELEPROMPTER.scrollSpeed,
+      teleprompterFontSize: DEFAULT_STAGE_TELEPROMPTER.fontSize,
+      mirrorPreview: true,
+      preRollEnabled: true,
+      shortcutsEnabled: true,
+    },
+  },
+  {
+    id: 'built-in-shorts',
+    name: 'Vertical Shorts / Reels 9:16',
+    description:
+      '1080×1920 Top/Bottom Stack · Auto-Duck + Voice Clarity · 3s Pre-Roll',
+    builtIn: true,
+    updatedAtIso: '2026-01-01T00:00:00.000Z',
+    profile: {
+      layoutMode: 'top-bottom',
+      resolutionPreset: '1080p-vertical',
+      pipRect: DEFAULT_PIP_RECT,
+      pipFrameShape: 'rounded',
+      pipBorderStyle: 'sky',
+      splitRatio: 0.5,
+      sourceGain: 0.85,
+      sourceMuted: false,
+      microphoneGain: 1.25,
+      microphoneMuted: false,
+      autoDuckEnabled: true,
+      micProcessingEnabled: true,
+      lowerThirdEnabled: false,
+      lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
+      lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
+      teleprompterEnabled: false,
+      teleprompterScript: DEFAULT_STAGE_TELEPROMPTER.scriptText,
+      teleprompterScrollSpeed: DEFAULT_STAGE_TELEPROMPTER.scrollSpeed,
+      teleprompterFontSize: DEFAULT_STAGE_TELEPROMPTER.fontSize,
       mirrorPreview: true,
       preRollEnabled: true,
       shortcutsEnabled: true,
@@ -436,10 +554,12 @@ function formatProfileSummary(profile: StudioWorkspaceProfile): string {
     profile.layoutMode === 'pip'
       ? 'PIP'
       : profile.layoutMode === 'side-by-side'
-        ? `${Math.round(profile.splitRatio * 100)}% Split`
-        : profile.layoutMode === 'source-only'
-          ? 'Source Only'
-          : 'Webcam Only';
+        ? `${String(Math.round(profile.splitRatio * 100))}% Split`
+        : profile.layoutMode === 'top-bottom'
+          ? `${String(Math.round(profile.splitRatio * 100))}% Top/Bottom`
+          : profile.layoutMode === 'source-only'
+            ? 'Source Only'
+            : 'Webcam Only';
   const srcLabel = profile.sourceMuted
     ? 'Video Muted'
     : `Video ${Math.round(profile.sourceGain * 100)}%`;

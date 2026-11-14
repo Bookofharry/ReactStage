@@ -16,6 +16,7 @@ import type { RecordingEngine } from './services/interfaces/recording-engine';
 import type { SceneCompositor } from './services/interfaces/scene-compositor';
 import type { SourcePlayer } from './services/interfaces/source-player';
 import type { StudioPreferencesStore } from './services/studio-preferences';
+import type { TakeVault } from './services/take-vault';
 import { AudioMixerProvider } from './state/AudioMixerContext';
 import { CaptureProvider } from './state/CaptureContext';
 import { CompositorProvider } from './state/CompositorContext';
@@ -35,6 +36,7 @@ export interface AppProps {
   readonly audioMixer?: AudioMixer;
   readonly recordingEngine?: RecordingEngine;
   readonly exportManager?: ExportManager;
+  readonly takeVault?: TakeVault;
   readonly preferencesStore?: StudioPreferencesStore;
   readonly initialRecordingState?: RecordingSessionState;
   readonly countdownStepMs?: number;
@@ -48,6 +50,7 @@ export function App({
   audioMixer,
   recordingEngine,
   exportManager,
+  takeVault,
   preferencesStore,
   initialRecordingState,
   countdownStepMs,
@@ -63,7 +66,7 @@ export function App({
               initialState={initialRecordingState}
               countdownStepMs={countdownStepMs}
             >
-              <ExportProvider manager={exportManager}>
+              <ExportProvider manager={exportManager} vault={takeVault}>
                 <StudioShortcutsProvider>
                   <StudioPreferencesProvider
                     preferencesStore={preferencesStore}

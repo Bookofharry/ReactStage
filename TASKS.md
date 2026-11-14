@@ -144,3 +144,33 @@ Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`)
 | **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`75 modules transformed`) built in `1.62s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-B03csGm4.css` `40.35 kB` / `7.60 kB` gzip, `dist/assets/index-jgQJC_Kb.js` `517.02 kB` / `135.32 kB` gzip) targeting `/ReactStage/` base path. |
 | **Chromium E2E + A11y + Offline PWA** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **21 passed E2E tests** in `38.3s` (including `broadcast-and-pwa.spec.ts` verifying live `getDisplayMedia` screen composition, freeze/resume, Lower-Thirds, Auto-Duck & Voice Clarity, valid `0x89504E47` `.png` disk snapshot download, Service Worker offline reload under `context.setOffline(true)`, `0` horizontal overflow at `375px`/`768px`/`1280px`/`1440px`, and `0` WCAG 2.1 AA `axe-core` violations). |
 | **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |
+
+---
+
+## Tasks 15–19: GitHub Actions CI & Live GitHub Pages, `9:16` Vertical Shorts Mode, Persistent IndexedDB Take Vault, Eye-Line Teleprompter, and In-Studio Trim / `.wav` Export (COMPLETED)
+
+### Checklist
+- [x] **Task 15 — Automated GitHub Actions Quality Gate (`ci.yml`) & Live GitHub Pages Deployment (`deploy.yml`)**:
+  - [x] Added `.github/workflows/ci.yml` enforcing `pnpm run check` (`tsc -b`, `eslint --max-warnings 0`, Vitest, Vite build, and Playwright Chromium E2E + WCAG 2.1 AA `axe-core`) on PRs and non-`main` pushes, and aligned `.github/workflows/deploy.yml` on `pnpm 10` + `Node.js 22` (`actions/deploy-pages@v4`).
+  - [x] Published `Bookofharry/ReactStage` live to GitHub Pages (`https://bookofharry.github.io/ReactStage/`).
+- [x] **Task 16 — Vertical Shorts / Reels Mode (`9:16` Portrait Output + `Top / Bottom` Split Layout)**:
+  - [x] Added `'720p-vertical'` (`720×1280`) and `'1080p-vertical'` (`1080×1920`) output resolutions, `'top-bottom'` vertical split layout (`resolveVerticalSplitPanes`, `5` hotkey, `contain` source top + `cover` camera bottom), centered `9:16` stage viewport framing, portrait-proportioned Lower-Third cards, and the built-in `'built-in-shorts'` (`Vertical Shorts / Reels (9:16)`) preset.
+- [x] **Task 17 — Persistent Local IndexedDB Take Vault & Crash/Reload Recovery (`IndexedDbTakeVault`)**:
+  - [x] Implemented `IndexedDbTakeVault` (`reactstage-take-vault-v1`, FIFO cap `MAX_VAULT_TAKES = 12`) + `InMemoryTakeVault`, hydrating recorded reaction `Blob`s, chapter markers, and custom filenames across browser reloads while holding at most `1` active preview `ObjectURL` and firing `0` unsolicited `getUserMedia` / `enumerateDevices` calls on startup.
+- [x] **Task 18 — On-Stage Eye-Line Teleprompter HUD (`SceneStagePanel` + `StudioPreferencesStore`)**:
+  - [x] Added pure-DOM `StageTeleprompterConfig` (`T` hotkey, script notes, `sm`/`md`/`lg` font sizes, and `1x–5x` smooth `requestAnimationFrame` auto-scroll, persisted in `localStorage`) positioned at top-center directly below the creator's webcam so `canvas.captureStream(30)` recordings remain 100% free of teleprompter text.
+- [x] **Task 19 — In-Studio Trim In/Out & Companion `.wav` Audio Export (`media-trim-and-wav.ts` + `ExportPanel`)**:
+  - [x] Added non-destructive `Trim In` / `Trim Out` range controls clamping `<video>` preview playback, local trimmed `.webm` clip saving (`exportTrimmedWebmBlob`), and spec-compliant 44-byte RIFF/WAVE `16-bit PCM` `.wav` audio extraction (`extractCompanionWavBlob`) with `0` speaker bleed (`AudioContext` closed immediately in `finally` with zero connections to `destination`).
+- [x] Added `<StrictMode>` unit/integration suite (`tests/unit/shorts-vault-teleprompter-trim.test.tsx`) and Chromium E2E + `axe-core` + reload-recovery suite (`tests/e2e/shorts-vault-teleprompter-trim.spec.ts`).
+
+### Final Release Verification Results (Tasks 1–19 — Release v1.2.0 Gate)
+Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`) on Windows (`Node.js` + `pnpm`):
+
+| Check | Command | Result | Actual Output Details |
+| :--- | :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | **PASS** | `tsc -b` exited `0` with `0` errors across app, node configs, unit tests, and Playwright E2E specs. |
+| **Lint** | `pnpm run lint` | **PASS** | `eslint . --max-warnings 0` (`strictTypeChecked` + `stylisticTypeChecked` + `jsx-a11y`) exited `0` with `0` errors and `0` warnings. |
+| **Unit & Integration Tests** | `pnpm run test` | **PASS** | Vitest `v3.2.7`: **22 passed test suites, 73 passed tests** in `14.45s` (including `shorts-vault-teleprompter-trim.test.tsx` — 3 tests). |
+| **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`78 modules transformed`) built in `1.39s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-9ID1Wqty.css` `42.12 kB` / `7.89 kB` gzip, `dist/assets/index-Bskep78r.js` `547.40 kB` / `142.44 kB` gzip) targeting `/ReactStage/` base path. |
+| **Chromium E2E + A11y + Vault Reload** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **22 passed E2E tests** in `56.3s` (including `shorts-vault-teleprompter-trim.spec.ts` verifying `720×1280` `9:16` Shorts recording, non-recorded Teleprompter HUD, RIFF/WAVE `.wav` header bytes, IndexedDB reload persistence with `0` unsolicited media calls, `0` horizontal overflow at `375px`/`768px`/`1280px`/`1440px`, and `0` WCAG 2.1 AA `axe-core` violations). |
+| **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |

@@ -90,6 +90,18 @@ Creators, educators, coaches, and technical reviewers frequently record video re
 - **Installable Offline Desktop PWA (`manifest.webmanifest` + `sw.js` + `PwaContext`)**:
   - Standalone desktop Web App Manifest, build-generated `offline-manifest.json` Service Worker precache, header **Install App** prompt trigger, and 100% offline studio reloads.
 
+### Milestones 15–19 (Tasks 15–19 — Completed in `v1.2.0`)
+- **Automated CI Quality Gate & Live GitHub Pages Deployment (`.github/workflows/ci.yml` + `deploy.yml`)**:
+  - Full `pnpm run check` gate (`tsc -b`, `eslint --max-warnings 0`, Vitest, Vite build, Playwright Chromium E2E + `axe-core`) on PRs and automated GitHub Pages deployment at `https://bookofharry.github.io/ReactStage/`.
+- **Vertical Shorts / Reels Mode (`9:16` Portrait Output + `Top / Bottom` Layout)**:
+  - `720×1280` (`720p-vertical`) and `1080×1920` (`1080p-vertical`) output presets, `Top / Bottom` vertical split layout (`5` hotkey), `9:16` stage framing, and built-in **Vertical Shorts / Reels (9:16)** preset.
+- **Persistent Local IndexedDB Take Vault (`IndexedDbTakeVault`)**:
+  - Crash- and reload-resilient local IndexedDB vault (`reactstage-take-vault-v1`, up to 12 takes) preserving recorded WebM/MP4 blobs, chapter markers, and custom filenames across tab refreshes with `<= 1` active preview `ObjectURL` and `0` startup hardware calls.
+- **On-Stage Eye-Line Teleprompter HUD (`SceneStagePanel` + `StudioPreferencesStore`)**:
+  - Pure-DOM top-center talking-points teleprompter (`T` hotkey, adjustable font size & smooth auto-scroll `1x–5x`) positioned directly below the creator's webcam while remaining 100% invisible in recorded canvas output.
+- **In-Studio Trim In/Out & Companion `.wav` Audio Export (`media-trim-and-wav.ts` + `ExportPanel`)**:
+  - Non-destructive `Trim In` / `Trim Out` range controls constraining preview playback, exporting trimmed `.webm` clips locally, and extracting spec-compliant `16-bit PCM` RIFF/WAVE `.wav` audio stems for podcast/DAW workflows.
+
 ---
 
 ## 5. Explicit Non-Goals

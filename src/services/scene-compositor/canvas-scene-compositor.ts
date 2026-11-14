@@ -28,6 +28,7 @@ import {
   resolvePipPixelRect,
   resolveResolutionOption,
   resolveSplitPanes,
+  resolveVerticalSplitPanes,
   type PixelRect,
 } from './layout-geometry';
 
@@ -1058,6 +1059,35 @@ export class CanvasSceneCompositor implements SceneCompositor {
         }
         break;
       }
+      case 'top-bottom': {
+        const panes = resolveVerticalSplitPanes(
+          this.config.splitRatio,
+          width,
+          height,
+          DEFAULT_SPLIT_DIVIDER_PX,
+        );
+        sourceDrawn = this.renderSourceRegion(
+          ctx,
+          panes.topPane,
+          sourceCheck,
+        );
+        cameraDrawn = this.renderCameraRegion(
+          ctx,
+          panes.bottomPane,
+          cameraCheck,
+          false,
+        );
+        if (panes.divider.height > 0) {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(
+            panes.divider.x,
+            panes.divider.y,
+            panes.divider.width,
+            panes.divider.height,
+          );
+        }
+        break;
+      }
     }
 
     this.renderLowerThirdLayer(ctx, width, height);
@@ -1314,13 +1344,15 @@ export class CanvasSceneCompositor implements SceneCompositor {
       ctx.save();
     }
 
-    const marginX = Math.round(width * 0.032);
-    const marginBottom = Math.round(height * 0.048);
-    const titleFontPx = Math.max(18, Math.round(height * 0.031));
+    const isPortrait = height > width;
+    const referenceDim = Math.min(width, height);
+    const marginX = Math.round(width * (isPortrait ? 0.045 : 0.032));
+    const marginBottom = Math.round(height * (isPortrait ? 0.042 : 0.048));
+    const titleFontPx = Math.max(18, Math.round(referenceDim * 0.034));
     const subFontPx = Math.max(13, Math.round(titleFontPx * 0.68));
-    const accentW = Math.max(5, Math.round(width * 0.0045));
-    const padX = Math.max(14, Math.round(width * 0.015));
-    const padY = Math.max(10, Math.round(height * 0.015));
+    const accentW = Math.max(5, Math.round(referenceDim * 0.0065));
+    const padX = Math.max(14, Math.round(referenceDim * 0.022));
+    const padY = Math.max(10, Math.round(referenceDim * 0.015));
     const lineGap = titleText && subtitleText ? Math.round(titleFontPx * 0.28) : 0;
 
     let measuredTitleW = 0;
@@ -1343,8 +1375,8 @@ export class CanvasSceneCompositor implements SceneCompositor {
           : subtitleText.length * subFontPx * 0.54;
     }
 
-    const minCardW = Math.round(width * 0.22);
-    const maxCardW = Math.round(width * 0.62);
+    const minCardW = Math.round(width * (isPortrait ? 0.42 : 0.22));
+    const maxCardW = Math.round(width * (isPortrait ? 0.91 : 0.62));
     const contentW = Math.max(measuredTitleW, measuredSubW);
     const cardW = Math.min(
       maxCardW,

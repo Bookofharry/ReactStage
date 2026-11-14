@@ -78,6 +78,7 @@ export function StudioShortcutsProvider({
     setActiveTool,
     setLayoutMode,
     toggleLowerThird,
+    toggleTeleprompter,
     undoAnnotation,
     clearAnnotations,
   } = useSceneCompositor();
@@ -268,6 +269,11 @@ export function StudioShortcutsProvider({
           setLayoutMode('camera-only');
           return;
         }
+        if (key === '5') {
+          event.preventDefault();
+          setLayoutMode('top-bottom');
+          return;
+        }
 
         if (lower === 'p') {
           const recStatus = engineState.status;
@@ -296,6 +302,12 @@ export function StudioShortcutsProvider({
         if (lower === 'l') {
           event.preventDefault();
           toggleLowerThird();
+          return;
+        }
+
+        if (lower === 't') {
+          event.preventDefault();
+          toggleTeleprompter();
           return;
         }
 
@@ -371,6 +383,7 @@ export function StudioShortcutsProvider({
     toggleSourceMute,
     togglePauseRecording,
     togglePlayPause,
+    toggleTeleprompter,
     undoAnnotation,
   ]);
 

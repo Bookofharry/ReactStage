@@ -126,6 +126,8 @@ function formatLayoutShort(mode: StageLayoutMode): string {
       return 'PIP';
     case 'side-by-side':
       return 'Split';
+    case 'top-bottom':
+      return 'Shorts';
     case 'source-only':
       return 'Source';
     case 'camera-only':

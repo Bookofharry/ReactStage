@@ -10,10 +10,13 @@ import {
 import { formatBytes, formatTimecode } from '../utils/format';
 import {
   AlertIcon,
+  AudioWaveformFileIcon,
   CopyClipboardIcon,
+  DatabaseVaultIcon,
   DownloadIcon,
   FlagMarkerIcon,
   HistoryIcon,
+  ScissorsTrimIcon,
   TrashIcon,
 } from './StudioIcons';
 
@@ -44,7 +47,7 @@ function getExportBadgeMeta(
     case 'error':
       return {
         label: 'Export Error',
-        classes: 'border-rose-400/40 bg-rose-400/10 text-rose-300',
+        classes: 'border-rose-400/40 bg-rose-950/75 text-rose-200',
       };
     case 'ready':
     case 'idle':
@@ -65,12 +68,24 @@ export function ExportPanel() {
     activeTake,
     fileNameDraft,
     normalizedFileName,
+    vaultSupported,
+    vaultTotalBytes,
+    trimStartSec,
+    trimEndSec,
+    trimmedDurationSec,
+    isTrimmed,
+    isProcessingCompanionExport,
+    lastCompanionExportMessage,
     selectTake,
     removeTake,
     clearAllTakes,
     setFileNameDraft,
     resetFileNameDraft,
+    setTrimRange,
+    resetTrimRange,
     downloadArtifact,
+    exportCompanionWav,
+    exportTrimmedVideo,
   } = useExport();
 
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -85,9 +100,67 @@ export function ExportPanel() {
   const chapterMarkers = artifact?.chapterMarkers ?? [];
   const formattedChaptersText =
     chapterMarkers.length > 0 ? formatYouTubeChapters(chapterMarkers) : '';
+  const fullDurationSec = artifact
+    ? Math.round(Math.max(0.2, artifact.durationMs / 1000) * 100) / 100
+    : 0;
 
   const handleFileNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setFileNameDraft(event.currentTarget.value);
+  };
+
+  const handleTrimStartChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const parsed = Number(event.currentTarget.value);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    setTrimRange(parsed, trimEndSec);
+    if (previewVideoRef.current) {
+      try {
+        previewVideoRef.current.currentTime = Math.max(0, parsed);
+      } catch {
+        // Ignore seek errors on unready media elements
+      }
+    }
+  };
+
+  const handleTrimEndChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const parsed = Number(event.currentTarget.value);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    setTrimRange(trimStartSec, parsed);
+  };
+
+  const handlePreviewPlay = () => {
+    const video = previewVideoRef.current;
+    if (!video || !isTrimmed) {
+      return;
+    }
+    if (
+      video.currentTime < trimStartSec - 0.05 ||
+      video.currentTime >= trimEndSec - 0.02
+    ) {
+      try {
+        video.currentTime = trimStartSec;
+      } catch {
+        // Ignore seek errors
+      }
+    }
+  };
+
+  const handlePreviewTimeUpdate = () => {
+    const video = previewVideoRef.current;
+    if (!video || !isTrimmed) {
+      return;
+    }
+    if (video.currentTime >= trimEndSec) {
+      video.pause();
+      try {
+        video.currentTime = trimStartSec;
+      } catch {
+        // Ignore seek errors
+      }
+    }
   };
 
   const handleSeekToMarker = (elapsedRecordingMs: number) => {
@@ -183,14 +256,14 @@ export function ExportPanel() {
         </div>
       ) : (
         <div className="mt-3 flex flex-col gap-3">
-          {/* Multi-Take Session Drawer */}
+          {/* Multi-Take Session Drawer + Persistent IndexedDB Vault Readout */}
           {takes.length > 0 && (
             <div
               data-testid="session-takes-drawer"
               className="rounded-lg border border-slate-800 bg-slate-950 p-2.5"
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-200">
                   <HistoryIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
                   <span>Session Takes</span>
                   <span
@@ -199,6 +272,15 @@ export function ExportPanel() {
                   >
                     {takes.length}
                   </span>
+                  {vaultSupported && (
+                    <span
+                      data-testid="vault-status-badge"
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-400/35 bg-emerald-950/60 px-2 py-0.5 text-[10px] font-medium text-emerald-200"
+                    >
+                      <DatabaseVaultIcon className="h-2.5 w-2.5 shrink-0 text-emerald-300" />
+                      <span>Vault Saved · {formatBytes(vaultTotalBytes)}</span>
+                    </span>
+                  )}
                 </div>
 
                 {takes.length > 1 && (
@@ -280,8 +362,10 @@ export function ExportPanel() {
               controls
               playsInline
               preload="metadata"
+              onPlay={handlePreviewPlay}
+              onTimeUpdate={handlePreviewTimeUpdate}
               aria-label="Recorded reaction video preview"
-              className="aspect-video w-full bg-black object-contain"
+              className="aspect-video max-h-72 w-full bg-black object-contain"
             />
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 px-3 py-1.5 text-[11px] text-slate-300">
               <span className="font-mono tabular-nums">
@@ -293,6 +377,121 @@ export function ExportPanel() {
                 {formatBytes(artifact.sizeBytes)}
               </span>
             </div>
+          </div>
+
+          {/* Non-Destructive Trim In/Out & Companion .wav Audio Export */}
+          <div
+            data-testid="export-trim-audio-card"
+            className="rounded-lg border border-slate-800 bg-slate-950 p-3"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-300">
+                <ScissorsTrimIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Trim &amp; Companion Audio</span>
+              </span>
+
+              <div className="flex items-center gap-2">
+                <span
+                  data-testid="trim-range-summary"
+                  className="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-200 tabular-nums"
+                >
+                  {isTrimmed
+                    ? `${formatTimecode(trimmedDurationSec, true)} Selected`
+                    : 'Full Clip'}
+                </span>
+                {isTrimmed && (
+                  <button
+                    type="button"
+                    data-testid="reset-trim-button"
+                    onClick={resetTrimRange}
+                    className="text-[11px] font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                  >
+                    Reset Trim
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="export-trim-start-input"
+                  className="text-[11px] font-medium text-slate-300"
+                >
+                  Trim In (s)
+                </label>
+                <input
+                  id="export-trim-start-input"
+                  data-testid="trim-start-input"
+                  type="number"
+                  min={0}
+                  max={fullDurationSec}
+                  step={0.1}
+                  value={trimStartSec}
+                  onChange={handleTrimStartChange}
+                  className="min-h-8 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="export-trim-end-input"
+                  className="text-[11px] font-medium text-slate-300"
+                >
+                  Trim Out (s)
+                </label>
+                <input
+                  id="export-trim-end-input"
+                  data-testid="trim-end-input"
+                  type="number"
+                  min={0.2}
+                  max={fullDurationSec}
+                  step={0.1}
+                  value={trimEndSec}
+                  onChange={handleTrimEndChange}
+                  className="min-h-8 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                />
+              </div>
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                data-testid="download-wav-button"
+                disabled={isProcessingCompanionExport}
+                onClick={() => {
+                  void exportCompanionWav();
+                }}
+                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <AudioWaveformFileIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                <span>
+                  {isTrimmed ? 'Save Trimmed .wav' : 'Save Audio (.wav)'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                data-testid="download-trimmed-video-button"
+                disabled={!isTrimmed || isProcessingCompanionExport}
+                onClick={() => {
+                  void exportTrimmedVideo();
+                }}
+                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-sky-400/40 bg-sky-950/50 px-2.5 py-1.5 text-xs font-semibold text-sky-200 hover:bg-sky-900/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900 disabled:text-slate-400"
+              >
+                <ScissorsTrimIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Save Trimmed Video</span>
+              </button>
+            </div>
+
+            {lastCompanionExportMessage && (
+              <p
+                data-testid="companion-export-banner"
+                className="mt-2 text-[11px] font-medium text-emerald-300"
+              >
+                {lastCompanionExportMessage}
+              </p>
+            )}
           </div>
 
           {/* Recorded Chapter Markers & YouTube 00:00 Export */}
@@ -435,8 +634,8 @@ export function ExportPanel() {
       )}
 
       <p className="mt-2.5 text-xs leading-relaxed text-slate-300">
-        100% on-device packaging · Preview Object URLs are automatically revoked
-        when replaced, discarded, or closed.
+        100% on-device packaging · Session takes auto-save to your browser
+        vault and Object URLs revoke deterministically.
       </p>
     </section>
   );

@@ -24,8 +24,10 @@ export {
   resolvePipPixelRect,
   resolveResolutionOption,
   resolveSplitPanes,
+  resolveVerticalSplitPanes,
   type PipCornerPreset,
   type PixelRect,
   type SourceCropRect,
   type SplitPanesGeometry,
+  type VerticalSplitPanesGeometry,
 } from './layout-geometry';

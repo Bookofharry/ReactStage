@@ -47,6 +47,12 @@ export interface SplitPanesGeometry {
   readonly rightPane: PixelRect;
 }
 
+export interface VerticalSplitPanesGeometry {
+  readonly topPane: PixelRect;
+  readonly divider: PixelRect;
+  readonly bottomPane: PixelRect;
+}
+
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -238,6 +244,58 @@ export function resolveSplitPanes(
       y: 0,
       width: rightWidth,
       height: canvasHeight,
+    },
+  };
+}
+
+export function resolveVerticalSplitPanes(
+  splitRatio: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  dividerHeightPx = DEFAULT_SPLIT_DIVIDER_PX,
+): VerticalSplitPanesGeometry {
+  if (
+    !Number.isFinite(canvasWidth) ||
+    !Number.isFinite(canvasHeight) ||
+    canvasWidth <= 0 ||
+    canvasHeight <= 0
+  ) {
+    const empty: PixelRect = { x: 0, y: 0, width: 0, height: 0 };
+    return { topPane: empty, divider: empty, bottomPane: empty };
+  }
+
+  const clampedRatio = clampSplitRatio(splitRatio);
+  const safeDivider = clampNumber(
+    Math.round(dividerHeightPx),
+    0,
+    Math.max(0, Math.floor(canvasHeight * 0.05)),
+  );
+  const availableHeight = Math.max(2, canvasHeight - safeDivider);
+  const topHeight = clampNumber(
+    Math.round(availableHeight * clampedRatio),
+    1,
+    availableHeight - 1,
+  );
+  const bottomHeight = availableHeight - topHeight;
+
+  return {
+    topPane: {
+      x: 0,
+      y: 0,
+      width: canvasWidth,
+      height: topHeight,
+    },
+    divider: {
+      x: 0,
+      y: topHeight,
+      width: canvasWidth,
+      height: safeDivider,
+    },
+    bottomPane: {
+      x: 0,
+      y: topHeight + safeDivider,
+      width: canvasWidth,
+      height: bottomHeight,
     },
   };
 }

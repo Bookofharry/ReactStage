@@ -61,6 +61,7 @@ export function StudioPreferencesProvider({
   } = useAudioMixer();
   const {
     state: compositorState,
+    teleprompter,
     setLayoutMode,
     setResolution,
     setPipRect,
@@ -68,6 +69,7 @@ export function StudioPreferencesProvider({
     setPipBorderStyle,
     setSplitRatio,
     setLowerThird,
+    setTeleprompter,
   } = useSceneCompositor();
   const { preRollEnabled, setPreRollEnabled } = useRecordingSession();
   const { shortcutsEnabled, setShortcutsEnabled } = useStudioShortcuts();
@@ -115,6 +117,12 @@ export function StudioPreferencesProvider({
         title: profile.lowerThirdTitle,
         subtitle: profile.lowerThirdSubtitle,
       });
+      setTeleprompter({
+        enabled: profile.teleprompterEnabled,
+        scriptText: profile.teleprompterScript,
+        scrollSpeed: profile.teleprompterScrollSpeed,
+        fontSize: profile.teleprompterFontSize,
+      });
       setMirrorPreview(profile.mirrorPreview);
       setPreRollEnabled(profile.preRollEnabled);
       setShortcutsEnabled(profile.shortcutsEnabled);
@@ -136,6 +144,7 @@ export function StudioPreferencesProvider({
       setSourceGain,
       setSourceMuted,
       setSplitRatio,
+      setTeleprompter,
     ],
   );
 
@@ -156,6 +165,10 @@ export function StudioPreferencesProvider({
       lowerThirdEnabled: compositorState.lowerThird.enabled,
       lowerThirdTitle: compositorState.lowerThird.title,
       lowerThirdSubtitle: compositorState.lowerThird.subtitle,
+      teleprompterEnabled: teleprompter.enabled,
+      teleprompterScript: teleprompter.scriptText,
+      teleprompterScrollSpeed: teleprompter.scrollSpeed,
+      teleprompterFontSize: teleprompter.fontSize,
       mirrorPreview: captureSnapshot.mirrorPreview,
       preRollEnabled,
       shortcutsEnabled,
@@ -179,6 +192,10 @@ export function StudioPreferencesProvider({
       mixerState.sourceChannel.muted,
       preRollEnabled,
       shortcutsEnabled,
+      teleprompter.enabled,
+      teleprompter.fontSize,
+      teleprompter.scriptText,
+      teleprompter.scrollSpeed,
     ],
   );
 

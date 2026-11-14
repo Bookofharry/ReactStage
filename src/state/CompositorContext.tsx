@@ -28,12 +28,15 @@ import {
   type PipCornerPreset,
 } from '../services/scene-compositor';
 import {
+  DEFAULT_STAGE_TELEPROMPTER,
   DEFAULT_TELESTRATOR_COLOR,
+  MAX_TELEPROMPTER_SCRIPT_LENGTH,
   type PipBorderStyle,
   type PipFrameShape,
   type SceneResolutionPreset,
   type StageLayoutMode,
   type StageLowerThirdConfig,
+  type StageTeleprompterConfig,
   type TelestratorTool,
 } from '../types/media';
 import {
@@ -63,6 +66,9 @@ export interface SceneCompositorContextValue {
   readonly resetSplitRatio: () => void;
   readonly setLowerThird: (patch: Partial<StageLowerThirdConfig>) => void;
   readonly toggleLowerThird: () => void;
+  readonly teleprompter: StageTeleprompterConfig;
+  readonly setTeleprompter: (patch: Partial<StageTeleprompterConfig>) => void;
+  readonly toggleTeleprompter: () => void;
   readonly captureSnapshotPng: (sourceLabel?: string | null) => Promise<boolean>;
   readonly addAnnotation: (annotation: StageAnnotation) => void;
   readonly undoAnnotation: () => boolean;
@@ -102,6 +108,10 @@ export function CompositorProvider({
   const [activeColor, setActiveColor] = useState<string>(
     DEFAULT_TELESTRATOR_COLOR,
   );
+  // Pure React/DOM state — intentionally excluded from CanvasSceneCompositor so
+  // canvas.captureStream(30) recordings stay 100% clean of teleprompter notes!
+  const [teleprompter, setTeleprompterState] =
+    useState<StageTeleprompterConfig>(DEFAULT_STAGE_TELEPROMPTER);
 
   const subscribeState = useCallback(
     (listener: () => void) => activeCompositor.subscribe(listener),
@@ -237,6 +247,49 @@ export function CompositorProvider({
     activeCompositor.setLowerThird({ enabled: !current });
   }, [activeCompositor]);
 
+  const setTeleprompter = useCallback(
+    (patch: Partial<StageTeleprompterConfig>) => {
+      setTeleprompterState((prev) => {
+        const nextScript =
+          patch.scriptText !== undefined
+            ? patch.scriptText.slice(0, MAX_TELEPROMPTER_SCRIPT_LENGTH)
+            : prev.scriptText;
+        const nextSpeed =
+          patch.scrollSpeed !== undefined && Number.isFinite(patch.scrollSpeed)
+            ? Math.min(5, Math.max(1, Math.round(patch.scrollSpeed)))
+            : prev.scrollSpeed;
+        const nextFontSize =
+          patch.fontSize === 'sm' ||
+          patch.fontSize === 'md' ||
+          patch.fontSize === 'lg'
+            ? patch.fontSize
+            : prev.fontSize;
+        const nextEnabled =
+          typeof patch.enabled === 'boolean' ? patch.enabled : prev.enabled;
+
+        if (
+          nextEnabled === prev.enabled &&
+          nextScript === prev.scriptText &&
+          nextSpeed === prev.scrollSpeed &&
+          nextFontSize === prev.fontSize
+        ) {
+          return prev;
+        }
+        return {
+          enabled: nextEnabled,
+          scriptText: nextScript,
+          scrollSpeed: nextSpeed,
+          fontSize: nextFontSize,
+        };
+      });
+    },
+    [],
+  );
+
+  const toggleTeleprompter = useCallback(() => {
+    setTeleprompterState((prev) => ({ ...prev, enabled: !prev.enabled }));
+  }, []);
+
   const captureSnapshotPng = useCallback(
     async (sourceLabel?: string | null): Promise<boolean> => {
       const canvas = canvasRef.current;
@@ -342,6 +395,9 @@ export function CompositorProvider({
       resetSplitRatio,
       setLowerThird,
       toggleLowerThird,
+      teleprompter,
+      setTeleprompter,
+      toggleTeleprompter,
       captureSnapshotPng,
       addAnnotation,
       undoAnnotation,
@@ -373,12 +429,15 @@ export function CompositorProvider({
       setPipRect,
       setResolution,
       setSplitRatio,
+      setTeleprompter,
       snapPipToCorner,
       startSceneLoop,
       state,
       stopSceneLoop,
+      teleprompter,
       toggleLowerThird,
       toggleSceneLoop,
+      toggleTeleprompter,
       undoAnnotation,
     ],
   );

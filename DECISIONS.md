@@ -242,3 +242,51 @@
   1. Emit `offline-manifest.json` automatically during `vite build` (`reactStageOfflineManifestPlugin` in `vite.config.ts`) listing `./`, `./index.html`, `./manifest.webmanifest`, icons, and every hashed bundle asset.
   2. Implement `public/sw.js` (`reactstage-shell-v1`) precaching `offline-manifest.json` on `install` (`skipWaiting` + `clients.claim`) and serving same-origin `GET` requests with a **Network-First with Cache Update + Offline Precache Fallback** strategy (explicitly ignoring `blob:` and media stream URLs), paired with `PwaProvider` (`beforeinstallprompt` **Install App** button + **Offline Ready** status badge).
 - **Consequences**: Always-fresh online loads, verified 100% offline reloads in Chromium E2E (`context.setOffline(true)`), standalone desktop installability, and zero unsolicited permission calls.
+
+---
+
+## ADR-024: Automated GitHub Actions Quality Gate (`ci.yml`) & Workflow-Driven GitHub Pages (`deploy.yml`)
+- **Status**: Accepted (Task 15)
+- **Context**:
+  1. Every non-`main` branch push and Pull Request should enforce the exact composite quality gate (`pnpm run check`: TypeScript `tsc -b`, strict ESLint `--max-warnings 0`, Vitest unit/integration suites, Vite production build, and Playwright Chromium E2E + WCAG 2.1 AA `axe-core` audits) before code lands on `main`.
+  2. Live GitHub Pages deployment (`https://bookofharry.github.io/ReactStage/`) should build deterministically on `pnpm 10` + `Node.js 22` using GitHub Actions `actions/upload-pages-artifact` + `actions/deploy-pages` (`build_type: workflow`) with dynamic repository base-path injection (`VITE_BASE_PATH: /${{ github.event.repository.name }}/`).
+- **Decision**:
+  1. Add `.github/workflows/ci.yml` installing `pnpm 10`, `Node.js 22`, and cached Chromium (`playwright install --with-deps chromium`) and running `pnpm run check` on PRs and non-`main` branch pushes.
+  2. Align `.github/workflows/deploy.yml` on `pnpm 10` + `Node.js 22` (`actions/deploy-pages@v4`) and publish `Bookofharry/ReactStage` live to GitHub Pages.
+- **Consequences**: Zero-drift CI parity with local `pnpm run check` and zero-server automated static deployment on `https://bookofharry.github.io/ReactStage/`.
+
+---
+
+## ADR-025: `9:16` Vertical Shorts / Reels Output (`720×1280` & `1080×1920`) & Top/Bottom Split Layout (`5` Hotkey)
+- **Status**: Accepted (Task 16)
+- **Context**:
+  1. Short-form reaction creators (YouTube Shorts, Instagram Reels, TikTok) publish in `9:16` portrait aspect ratio with the reacted video stacked in the top pane and the creator's webcam filling the bottom pane.
+  2. Landscape `16:9` stage viewports waste vertical space or distort aspect ratios if stretched when rendering portrait `720×1280` or `1080×1920` scenes.
+- **Decision**:
+  1. Extend `SceneResolutionPreset` with `'720p-vertical'` (`720×1280`) and `'1080p-vertical'` (`1080×1920`), and extend `StageLayoutMode` with `'top-bottom'` (`resolveVerticalSplitPanes` in `layout-geometry.ts`, hotkey `5`, `contain`-fitting source media in the top pane and `cover`-cropping webcam in the bottom pane).
+  2. Adapt `SceneStagePanel` to frame portrait canvases inside a centered `aspect-[9/16]` stage viewport, scale `CanvasSceneCompositor.renderLowerThirdLayer` card margins proportionally on portrait widths, and add the built-in `'built-in-shorts'` (`Vertical Shorts / Reels (9:16)`) creator preset in `StudioPreferencesStore`.
+- **Consequences**: Native `9:16` Shorts/Reels recording directly from `canvas.captureStream(30)` with zero post-export cropping tools required.
+
+---
+
+## ADR-026: Persistent Local IndexedDB `TakeVault` With Single-Preview `ObjectURL` Discipline
+- **Status**: Accepted (Task 17)
+- **Context**:
+  1. Browser tab refreshes, accidental reloads, or battery shutdowns previously lost un-downloaded in-memory `SessionTakeEntry` recordings because `localStorage` (`~5 MB` UTF-16 quota) cannot store multi-megabyte WebM/MP4 `Blob`s.
+  2. Restoring multiple takes across reloads must never violate ReactStage's strict `activeObjectUrlCount <= 1` preview memory invariant or trigger unsolicited `getUserMedia` / `enumerateDevices` calls on startup.
+- **Decision**:
+  1. Implement `IndexedDbTakeVault` (`reactstage-take-vault-v1`, object store `'takes'`, FIFO cap `MAX_VAULT_TAKES = 12`, plus `InMemoryTakeVault` fallback/test adapter) storing structured-cloned `Blob`s alongside `RecordedMediaArtifact` metadata, chapter markers, custom filenames, and download counts.
+  2. Hydrate `ExportProvider` asynchronously on mount, allocating a `blob:` preview URL **only** for the single selected take (`activeObjectUrlCount <= 1`), syncing newly recorded/renamed/deleted takes in the background, and surfacing `Vault Saved · <size>` in `ExportPanel`.
+- **Consequences**: Zero-cloud crash/refresh recovery for up to 12 recorded reaction takes with bounded `<= 1` Object URL allocation and `0` startup hardware calls.
+
+---
+
+## ADR-027: Non-Recorded Eye-Line Teleprompter HUD (`T`) & Client-Side Trim / `16-bit PCM` `.wav` Companion Export
+- **Status**: Accepted (Tasks 18 & 19)
+- **Context**:
+  1. Creators want talking points / script notes positioned directly below their top-bezel webcam (`eye-line`) with optional hands-free auto-scroll while recording, **without** burning those private notes into the exported reaction video.
+  2. Creators frequently trim dead air at the start/end of a reaction take or import a clean uncompressed audio stem (`.wav`) into podcast/DAW editors (Audacity, Reaper, Logic, Premiere) without uploading footage to cloud splitters.
+- **Decision**:
+  1. Render `StageTeleprompterConfig` (`enabled`, `text`, `autoScroll`, `scrollSpeed` `1–5`, `fontSize` `sm`/`md`/`lg`, hotkey `T`, persisted in `StudioPreferencesStore`) as a pure React/DOM overlay above `<canvas>` inside `SceneStagePanel` (`pointer-events-none` HUD) so `canvas.captureStream(30)` never records teleprompter text.
+  2. Add non-destructive `Trim In` / `Trim Out` controls in `ExportPanel` (`src/utils/media-trim-and-wav.ts`): preview `<video>` loops/stops cleanly within `[trimStartSec, trimEndSec]`, **Save Audio (.wav)** decodes the recorded `Blob` via `AudioContext.decodeAudioData` (closing `AudioContext` immediately in `finally` with **zero** connections to `destination`), slices `[trimStartSec, trimEndSec]`, and writes a spec-compliant 44-byte RIFF/WAVE `16-bit PCM` little-endian `.wav` download, and **Save Trimmed Video** re-captures the selected `[trimStartSec, trimEndSec]` window locally with `0` speaker bleed.
+- **Consequences**: Natural camera eye contact during scripted segments, instant local `.wav` podcast/DAW stems, and local trimmed video clips with 100% on-device privacy.
