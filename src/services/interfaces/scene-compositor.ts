@@ -3,6 +3,7 @@ import type {
   PipFrameShape,
   SceneResolutionPreset,
   StageLayoutMode,
+  StageLowerThirdConfig,
 } from '../../types/media';
 
 export interface NormalizedScenePoint {
@@ -55,6 +56,7 @@ export interface CompositorConfig {
   readonly pipFrameShape: PipFrameShape;
   readonly pipBorderStyle: PipBorderStyle;
   readonly splitRatio: number;
+  readonly lowerThird: StageLowerThirdConfig;
 }
 
 /**
@@ -74,6 +76,7 @@ export interface CompositorStateSnapshot {
   readonly pipFrameShape: PipFrameShape;
   readonly pipBorderStyle: PipBorderStyle;
   readonly splitRatio: number;
+  readonly lowerThird: StageLowerThirdConfig;
   readonly annotationCount: number;
   readonly hasSourceElement: boolean;
   readonly hasCameraStream: boolean;
@@ -132,6 +135,7 @@ export interface SceneCompositor {
   setPipFrameShape(shape: PipFrameShape): void;
   setPipBorderStyle(border: PipBorderStyle): void;
   setSplitRatio(ratio: number): void;
+  setLowerThird(patch: Partial<StageLowerThirdConfig>): void;
   getAnnotations(): readonly StageAnnotation[];
   addAnnotation(annotation: StageAnnotation): void;
   undoAnnotation(): boolean;

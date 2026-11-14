@@ -14,6 +14,10 @@ import {
 } from './file-validator';
 import { ObjectUrlRegistry } from './object-url-registry';
 
+export type DisplayMediaFn = (
+  options?: DisplayMediaStreamOptions,
+) => Promise<MediaStream>;
+
 interface PendingLoadCandidate {
   readonly fileName: string;
   readonly fileSizeBytes: number;
@@ -25,11 +29,13 @@ interface PendingLoadCandidate {
 export interface HtmlVideoSourcePlayerOptions {
   readonly urlRegistry?: ObjectUrlRegistry;
   readonly canPlayType?: CanPlayTypeFn;
+  readonly getDisplayMedia?: DisplayMediaFn | null;
 }
 
 export function createInitialPlaybackState(): SourcePlaybackState {
   return {
     status: 'empty',
+    sourceMode: 'file',
     objectUrl: null,
     metadata: null,
     pendingFileName: null,
@@ -38,6 +44,7 @@ export function createInitialPlaybackState(): SourcePlaybackState {
     playbackRate: 1,
     volume: 1,
     muted: false,
+    hasScreenAudioTrack: false,
     error: null,
   };
 }
@@ -50,13 +57,41 @@ function isSupportedSpeed(value: number): value is PlaybackSpeed {
   return (SUPPORTED_PLAYBACK_SPEEDS as readonly number[]).includes(value);
 }
 
+function resolveDefaultDisplayMedia(): DisplayMediaFn | null {
+  if (typeof navigator === 'undefined') {
+    return null;
+  }
+  const devices = (
+    navigator as Partial<Navigator> & {
+      mediaDevices?: Partial<MediaDevices>;
+    }
+  ).mediaDevices;
+  if (!devices || typeof devices.getDisplayMedia !== 'function') {
+    return null;
+  }
+  return devices.getDisplayMedia.bind(devices);
+}
+
+function stopStreamTracksSafely(stream: MediaStream): void {
+  for (const track of stream.getTracks()) {
+    try {
+      track.stop();
+    } catch {
+      // Ignore track stop errors on already-ended tracks
+    }
+  }
+}
+
 export class HtmlVideoSourcePlayer implements SourcePlayer {
   private state: SourcePlaybackState = createInitialPlaybackState();
   private readonly listeners = new Set<SourcePlayerListener>();
   private readonly urlRegistry: ObjectUrlRegistry;
   private readonly canPlayType?: CanPlayTypeFn;
+  private readonly customGetDisplayMedia?: DisplayMediaFn | null;
   private videoElement: HTMLVideoElement | null = null;
   private detachElementListeners: (() => void) | null = null;
+  private activeScreenStream: MediaStream | null = null;
+  private detachScreenListeners: (() => void) | null = null;
   private pendingCandidate: PendingLoadCandidate | null = null;
   private loadGeneration = 0;
   private isClearingElement = false;
@@ -66,10 +101,15 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   public constructor(options: HtmlVideoSourcePlayerOptions = {}) {
     this.urlRegistry = options.urlRegistry ?? new ObjectUrlRegistry();
     this.canPlayType = options.canPlayType;
+    this.customGetDisplayMedia = options.getDisplayMedia;
   }
 
   public getState(): SourcePlaybackState {
     return this.state;
+  }
+
+  public getScreenStream(): MediaStream | null {
+    return this.activeScreenStream;
   }
 
   public subscribe(listener: SourcePlayerListener): () => void {
@@ -98,10 +138,19 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     this.bindVideoEvents(element);
     this.applyAudioAndSpeedToElement(element);
 
+    if (this.activeScreenStream) {
+      element.removeAttribute('src');
+      element.srcObject = this.activeScreenStream;
+      this.enforceScreenMutedOnElement(element);
+      void this.safePlayScreenElement(element);
+      return;
+    }
+
     if (
       this.state.objectUrl !== null &&
       element.getAttribute('src') !== this.state.objectUrl
     ) {
+      element.srcObject = null;
       element.src = this.state.objectUrl;
       this.safeCallLoad(element);
     }
@@ -110,6 +159,8 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   public loadFile(file: File): void {
     this.loadGeneration += 1;
     const currentGen = this.loadGeneration;
+
+    this.releaseOwnedScreenStream();
 
     if (this.videoElement && !this.videoElement.paused) {
       this.safeCallPause(this.videoElement);
@@ -123,11 +174,13 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
       this.setState({
         ...this.state,
         status: 'error',
+        sourceMode: 'file',
         objectUrl: null,
         metadata: null,
         pendingFileName: null,
         currentTimeSec: 0,
         durationSec: 0,
+        hasScreenAudioTrack: false,
         error: validation.error,
       });
       return;
@@ -145,35 +198,244 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     this.setState({
       ...this.state,
       status: 'loading',
+      sourceMode: 'file',
       objectUrl: nextObjectUrl,
       metadata: null,
       pendingFileName: file.name,
       currentTimeSec: 0,
       durationSec: 0,
+      hasScreenAudioTrack: false,
       error: null,
     });
 
     if (this.videoElement) {
+      this.videoElement.srcObject = null;
       this.applyAudioAndSpeedToElement(this.videoElement);
       this.videoElement.src = nextObjectUrl;
       this.safeCallLoad(this.videoElement);
     }
   }
 
+  public async startScreenShare(): Promise<void> {
+    const displayMediaFn =
+      this.customGetDisplayMedia !== undefined
+        ? this.customGetDisplayMedia
+        : resolveDefaultDisplayMedia();
+
+    if (!displayMediaFn) {
+      this.releaseOwnedScreenStream();
+      this.clearVideoElementSource();
+      this.urlRegistry.revokeAll();
+      this.setState({
+        ...this.state,
+        status: 'error',
+        sourceMode: 'file',
+        objectUrl: null,
+        metadata: null,
+        pendingFileName: null,
+        currentTimeSec: 0,
+        durationSec: 0,
+        hasScreenAudioTrack: false,
+        error: {
+          code: 'SCREEN_CAPTURE_UNSUPPORTED',
+          title: 'Screen sharing unavailable',
+          message:
+            'This browser environment does not support getDisplayMedia screen or tab capture.',
+          recoverable: true,
+        },
+      });
+      return;
+    }
+
+    this.loadGeneration += 1;
+    const requestGen = this.loadGeneration;
+    const hadLoadedSourceBeforePrompt =
+      this.state.metadata !== null &&
+      (this.state.objectUrl !== null || this.activeScreenStream !== null);
+
+    let capturedStream: MediaStream;
+    try {
+      capturedStream = await displayMediaFn({
+        video: {
+          frameRate: { ideal: 30, max: 60 },
+        },
+        audio: true,
+      });
+    } catch (err: unknown) {
+      if (this.loadGeneration !== requestGen) {
+        return;
+      }
+
+      const isUserDismissed =
+        err instanceof DOMException &&
+        (err.name === 'NotAllowedError' || err.name === 'AbortError');
+
+      if (isUserDismissed && hadLoadedSourceBeforePrompt) {
+        // Keep the creator's already-loaded source intact when canceling the OS picker
+        return;
+      }
+
+      const reason =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Screen capture permission was declined or failed.';
+
+      this.releaseOwnedScreenStream();
+      this.clearVideoElementSource();
+      this.urlRegistry.revokeAll();
+      this.setState({
+        ...this.state,
+        status: 'error',
+        sourceMode: 'file',
+        objectUrl: null,
+        metadata: null,
+        pendingFileName: null,
+        currentTimeSec: 0,
+        durationSec: 0,
+        hasScreenAudioTrack: false,
+        error: {
+          code: isUserDismissed
+            ? 'SCREEN_CAPTURE_DENIED'
+            : 'SCREEN_CAPTURE_FAILED',
+          title: isUserDismissed
+            ? 'Screen share canceled or blocked'
+            : 'Screen share could not start',
+          message: isUserDismissed
+            ? 'Select a browser tab, window, or screen when prompted, or import a local video file.'
+            : `Unable to capture screen stream: ${reason}`,
+          recoverable: true,
+        },
+      });
+      return;
+    }
+
+    if (this.loadGeneration !== requestGen) {
+      stopStreamTracksSafely(capturedStream);
+      return;
+    }
+
+    const videoTrack = capturedStream.getVideoTracks()[0];
+    if (!videoTrack || videoTrack.readyState === 'ended') {
+      stopStreamTracksSafely(capturedStream);
+      this.releaseOwnedScreenStream();
+      this.clearVideoElementSource();
+      this.urlRegistry.revokeAll();
+      this.setState({
+        ...this.state,
+        status: 'error',
+        sourceMode: 'file',
+        objectUrl: null,
+        metadata: null,
+        pendingFileName: null,
+        currentTimeSec: 0,
+        durationSec: 0,
+        hasScreenAudioTrack: false,
+        error: {
+          code: 'NO_VIDEO_TRACK',
+          title: 'Screen share contained no video track',
+          message:
+            'The shared source did not provide a live video track. Try sharing a window or tab again.',
+          recoverable: true,
+        },
+      });
+      return;
+    }
+
+    // Tear down any previous screen stream or local file Object URL cleanly
+    this.releaseOwnedScreenStream();
+    this.pendingCandidate = null;
+    this.urlRegistry.revokeAll();
+
+    this.activeScreenStream = capturedStream;
+
+    const onScreenEnded = () => {
+      if (this.activeScreenStream !== capturedStream) {
+        return;
+      }
+      this.unload();
+    };
+    videoTrack.addEventListener('ended', onScreenEnded);
+    this.detachScreenListeners = () => {
+      videoTrack.removeEventListener('ended', onScreenEnded);
+    };
+
+    const settings =
+      typeof videoTrack.getSettings === 'function'
+        ? videoTrack.getSettings()
+        : undefined;
+    const initialWidth =
+      settings?.width && settings.width > 0 ? settings.width : 1280;
+    const initialHeight =
+      settings?.height && settings.height > 0 ? settings.height : 720;
+    const label = videoTrack.label.trim() || 'Live Screen Share';
+    const hasScreenAudio = capturedStream
+      .getAudioTracks()
+      .some((track) => track.readyState !== 'ended');
+
+    if (this.videoElement) {
+      this.isClearingElement = true;
+      try {
+        this.videoElement.removeAttribute('src');
+        this.videoElement.srcObject = capturedStream;
+        this.enforceScreenMutedOnElement(this.videoElement);
+      } finally {
+        this.isClearingElement = false;
+      }
+      await this.safePlayScreenElement(this.videoElement);
+    }
+
+    if (this.loadGeneration !== requestGen) {
+      return;
+    }
+
+    const measuredWidth =
+      this.videoElement && this.videoElement.videoWidth > 0
+        ? this.videoElement.videoWidth
+        : initialWidth;
+    const measuredHeight =
+      this.videoElement && this.videoElement.videoHeight > 0
+        ? this.videoElement.videoHeight
+        : initialHeight;
+
+    this.setState({
+      ...this.state,
+      status: 'playing',
+      sourceMode: 'screen',
+      objectUrl: null,
+      metadata: {
+        fileName: label,
+        fileSizeBytes: 0,
+        mimeType: 'video/x-display-media',
+        lastModified: Date.now(),
+        durationSec: 0,
+        width: measuredWidth,
+        height: measuredHeight,
+      },
+      pendingFileName: null,
+      currentTimeSec: 0,
+      durationSec: 0,
+      hasScreenAudioTrack: hasScreenAudio,
+      error: null,
+    });
+  }
+
   public unload(): void {
     this.loadGeneration += 1;
     this.pendingCandidate = null;
+    this.releaseOwnedScreenStream();
     this.clearVideoElementSource();
     this.urlRegistry.revokeAll();
 
     this.setState({
       ...this.state,
       status: 'empty',
+      sourceMode: 'file',
       objectUrl: null,
       metadata: null,
       pendingFileName: null,
       currentTimeSec: 0,
       durationSec: 0,
+      hasScreenAudioTrack: false,
       error: null,
     });
   }
@@ -184,6 +446,19 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     }
 
     const activeGen = this.loadGeneration;
+
+    if (this.state.sourceMode === 'screen') {
+      this.enforceScreenMutedOnElement(this.videoElement);
+      await this.safePlayScreenElement(this.videoElement);
+      if (this.loadGeneration === activeGen && this.hasPlayableMedia()) {
+        this.setState({
+          ...this.state,
+          status: 'playing',
+          error: null,
+        });
+      }
+      return;
+    }
 
     if (this.state.status === 'ended' || this.videoElement.ended) {
       this.videoElement.currentTime = 0;
@@ -212,7 +487,9 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
         return;
       }
       const reason =
-        err instanceof Error ? err.message : 'Browser blocked or failed playback.';
+        err instanceof Error
+          ? err.message
+          : 'Browser blocked or failed playback.';
       this.setState({
         ...this.state,
         status: 'paused',
@@ -250,7 +527,11 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   }
 
   public seek(timeSec: number): void {
-    if (!this.hasPlayableMedia() || !Number.isFinite(timeSec)) {
+    if (
+      this.state.sourceMode === 'screen' ||
+      !this.hasPlayableMedia() ||
+      !Number.isFinite(timeSec)
+    ) {
       return;
     }
 
@@ -272,11 +553,17 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   }
 
   public rewind(seconds = 10): void {
+    if (this.state.sourceMode === 'screen') {
+      return;
+    }
     const delta = Number.isFinite(seconds) ? Math.max(0, seconds) : 10;
     this.seek(this.state.currentTimeSec - delta);
   }
 
   public restart(): void {
+    if (this.state.sourceMode === 'screen') {
+      return;
+    }
     this.seek(0);
   }
 
@@ -285,7 +572,7 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
       return;
     }
 
-    if (this.videoElement) {
+    if (this.videoElement && this.state.sourceMode !== 'screen') {
       this.videoElement.defaultPlaybackRate = rate;
       this.videoElement.playbackRate = rate;
     }
@@ -301,13 +588,18 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
       return;
     }
 
-    const maxGain = this.isExternalAudioControlled ? 2 : 1;
+    const maxGain =
+      this.isExternalAudioControlled || this.state.sourceMode === 'screen'
+        ? 2
+        : 1;
     const clampedVolume = Math.round(clamp(volume, 0, maxGain) * 100) / 100;
     const nextMuted =
       clampedVolume > 0 && this.state.muted ? false : this.state.muted;
 
     if (this.videoElement) {
-      if (this.isExternalAudioControlled) {
+      if (this.state.sourceMode === 'screen') {
+        this.enforceScreenMutedOnElement(this.videoElement);
+      } else if (this.isExternalAudioControlled) {
         this.enforceUnityOnElement(this.videoElement);
       } else {
         this.videoElement.volume = clampedVolume;
@@ -329,7 +621,9 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
 
   public setMuted(muted: boolean): void {
     if (this.videoElement) {
-      if (this.isExternalAudioControlled) {
+      if (this.state.sourceMode === 'screen') {
+        this.enforceScreenMutedOnElement(this.videoElement);
+      } else if (this.isExternalAudioControlled) {
         this.enforceUnityOnElement(this.videoElement);
       } else {
         this.videoElement.muted = muted;
@@ -355,7 +649,11 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
 
     this.isExternalAudioControlled = enabled;
 
-    if (!enabled && this.state.volume > 1) {
+    if (
+      !enabled &&
+      this.state.sourceMode !== 'screen' &&
+      this.state.volume > 1
+    ) {
       this.state = {
         ...this.state,
         volume: 1,
@@ -371,6 +669,7 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     this.loadGeneration += 1;
     this.pendingCandidate = null;
     this.isExternalAudioControlled = false;
+    this.releaseOwnedScreenStream();
     this.clearVideoElementSource();
 
     if (this.detachElementListeners) {
@@ -384,6 +683,29 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     this.listeners.clear();
   }
 
+  private releaseOwnedScreenStream(): void {
+    if (this.detachScreenListeners) {
+      this.detachScreenListeners();
+      this.detachScreenListeners = null;
+    }
+    if (this.activeScreenStream) {
+      const stream = this.activeScreenStream;
+      this.activeScreenStream = null;
+      stopStreamTracksSafely(stream);
+    }
+  }
+
+  private async safePlayScreenElement(element: HTMLVideoElement): Promise<void> {
+    try {
+      const playPromise = element.play();
+      if (playPromise instanceof Promise) {
+        await playPromise;
+      }
+    } catch {
+      // Headless JSDOM or aborted transitions safely ignored
+    }
+  }
+
   private hasPlayableMedia(): boolean {
     return (
       this.state.status === 'ready' ||
@@ -391,6 +713,16 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
       this.state.status === 'paused' ||
       this.state.status === 'ended'
     );
+  }
+
+  private enforceScreenMutedOnElement(element: HTMLVideoElement): void {
+    this.isSyncingElementUnity = true;
+    try {
+      element.volume = 0;
+      element.muted = true;
+    } finally {
+      this.isSyncingElementUnity = false;
+    }
   }
 
   private enforceUnityOnElement(element: HTMLVideoElement): void {
@@ -407,6 +739,10 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   }
 
   private applyAudioAndSpeedToElement(element: HTMLVideoElement): void {
+    if (this.activeScreenStream || this.state.sourceMode === 'screen') {
+      this.enforceScreenMutedOnElement(element);
+      return;
+    }
     element.defaultPlaybackRate = this.state.playbackRate;
     element.playbackRate = this.state.playbackRate;
     if (this.isExternalAudioControlled) {
@@ -425,6 +761,7 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     this.isClearingElement = true;
     try {
       this.safeCallPause(this.videoElement);
+      this.videoElement.srcObject = null;
       this.videoElement.removeAttribute('src');
       this.safeCallLoad(this.videoElement);
     } finally {
@@ -451,24 +788,53 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
   private failCurrentLoad(error: SourceMediaError): void {
     this.loadGeneration += 1;
     this.pendingCandidate = null;
+    this.releaseOwnedScreenStream();
     this.clearVideoElementSource();
     this.urlRegistry.revokeAll();
 
     this.setState({
       ...this.state,
       status: 'error',
+      sourceMode: 'file',
       objectUrl: null,
       metadata: null,
       pendingFileName: null,
       currentTimeSec: 0,
       durationSec: 0,
+      hasScreenAudioTrack: false,
       error,
     });
   }
 
   private bindVideoEvents(element: HTMLVideoElement): void {
     const onLoadedMetadata = () => {
-      if (this.isClearingElement || this.state.objectUrl === null) {
+      if (this.isClearingElement) {
+        return;
+      }
+
+      if (this.activeScreenStream && this.state.sourceMode === 'screen') {
+        const liveW = element.videoWidth;
+        const liveH = element.videoHeight;
+        if (
+          liveW > 0 &&
+          liveH > 0 &&
+          this.state.metadata &&
+          (this.state.metadata.width !== liveW ||
+            this.state.metadata.height !== liveH)
+        ) {
+          this.setState({
+            ...this.state,
+            metadata: {
+              ...this.state.metadata,
+              width: liveW,
+              height: liveH,
+            },
+          });
+        }
+        return;
+      }
+
+      if (this.state.objectUrl === null) {
         return;
       }
 
@@ -511,11 +877,15 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
       this.setState({
         ...this.state,
         status: 'ready',
+        sourceMode: 'file',
         metadata: {
           fileName,
-          fileSizeBytes: candidate?.fileSizeBytes ?? this.state.metadata?.fileSizeBytes ?? 0,
-          mimeType: candidate?.mimeType ?? this.state.metadata?.mimeType ?? 'video/mp4',
-          lastModified: candidate?.lastModified ?? this.state.metadata?.lastModified ?? 0,
+          fileSizeBytes:
+            candidate?.fileSizeBytes ?? this.state.metadata?.fileSizeBytes ?? 0,
+          mimeType:
+            candidate?.mimeType ?? this.state.metadata?.mimeType ?? 'video/mp4',
+          lastModified:
+            candidate?.lastModified ?? this.state.metadata?.lastModified ?? 0,
           durationSec: duration,
           width,
           height,
@@ -523,12 +893,18 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
         pendingFileName: null,
         durationSec: duration,
         currentTimeSec: clamp(element.currentTime, 0, duration),
+        hasScreenAudioTrack: false,
         error: null,
       });
     };
 
     const onTimeUpdate = () => {
-      if (this.isClearingElement || !this.hasPlayableMedia()) {
+      if (
+        this.isClearingElement ||
+        !this.hasPlayableMedia() ||
+        this.activeScreenStream !== null ||
+        this.state.sourceMode === 'screen'
+      ) {
         return;
       }
 
@@ -567,7 +943,12 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     };
 
     const onEnded = () => {
-      if (this.isClearingElement || !this.hasPlayableMedia()) {
+      if (
+        this.isClearingElement ||
+        !this.hasPlayableMedia() ||
+        this.activeScreenStream !== null ||
+        this.state.sourceMode === 'screen'
+      ) {
         return;
       }
       this.setState({
@@ -578,7 +959,11 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     };
 
     const onRateChange = () => {
-      if (this.isClearingElement) {
+      if (
+        this.isClearingElement ||
+        this.activeScreenStream !== null ||
+        this.state.sourceMode === 'screen'
+      ) {
         return;
       }
       const nextRate = element.playbackRate;
@@ -592,6 +977,10 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
 
     const onVolumeChange = () => {
       if (this.isClearingElement || this.isSyncingElementUnity) {
+        return;
+      }
+      if (this.activeScreenStream !== null || this.state.sourceMode === 'screen') {
+        this.enforceScreenMutedOnElement(element);
         return;
       }
       if (this.isExternalAudioControlled) {
@@ -610,7 +999,12 @@ export class HtmlVideoSourcePlayer implements SourcePlayer {
     };
 
     const onError = () => {
-      if (this.isClearingElement || this.state.objectUrl === null) {
+      if (
+        this.isClearingElement ||
+        this.activeScreenStream !== null ||
+        this.state.sourceMode === 'screen' ||
+        this.state.objectUrl === null
+      ) {
         return;
       }
 

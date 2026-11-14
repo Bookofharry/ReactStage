@@ -80,9 +80,19 @@ Creators, educators, coaches, and technical reviewers frequently record video re
   - Selectable PIP masks (**Rect**, **Rounded**, **Circle** creator bubble) and border accents persisted in creator presets.
   - Monotonic session-clock chapter markers (`B` hotkey + live title input) with clickable `<video>` preview seek chips, auto-`00:00 Intro` YouTube chapter formatting, clipboard copy, and local `-chapters.txt` export.
 
+### Milestones 11–14 (Tasks 11–14 — Completed)
+- **Live Screen / Window / Browser-Tab Source (`HtmlVideoSourcePlayer.startScreenShare` + `BrowserAudioMixer.attachSourceStream`)**:
+  - React to live browser tabs, code windows, or desktop screens via `getDisplayMedia`, with optional shared-tab audio mixed cleanly into `MediaStreamAudioDestinationNode` (zero speaker echo), live freeze-frame (`Freeze` / `Resume`) for Telestrator drawing, and graceful native `"Stop sharing"` handling.
+- **Smart Voice Auto-Ducking & Broadcast Mic Processing (`BrowserAudioMixer` + `AudioMixerPanel`)**:
+  - Optional voice-activated **Auto-Duck Video** smoothly attenuating source/screen audio while the creator speaks, plus optional **Voice Clarity** (`85 Hz` rumble high-pass filter + `4:1` vocal compressor/limiter) on the microphone channel.
+- **Stage Lower-Thirds & Instant Thumbnail Snapshot (`CanvasSceneCompositor` + `snapshot.ts`)**:
+  - Customizable on-canvas **Lower-Third** title & subtitle banner (`L` hotkey, PIP-collision-aware) and one-click lossless **Snapshot PNG** export.
+- **Installable Offline Desktop PWA (`manifest.webmanifest` + `sw.js` + `PwaContext`)**:
+  - Standalone desktop Web App Manifest, build-generated `offline-manifest.json` Service Worker precache, header **Install App** prompt trigger, and 100% offline studio reloads.
+
 ---
 
 ## 5. Explicit Non-Goals
 - No backend servers, accounts, telemetry, or cloud uploads.
-- No AI transcription, auto-editing, automatic audio ducking, AI noise removal, or external API calls.
+- No cloud AI transcription, external API calls, or server-side transcoding.
 - No fake/simulated recording or export buttons prior to real engine implementation.

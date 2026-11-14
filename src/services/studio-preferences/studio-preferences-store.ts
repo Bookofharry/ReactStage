@@ -10,11 +10,13 @@ import {
   clampPipRect,
   clampSplitRatio,
 } from '../scene-compositor';
-import type {
-  PipBorderStyle,
-  PipFrameShape,
-  SceneResolutionPreset,
-  StageLayoutMode,
+import {
+  DEFAULT_STAGE_LOWER_THIRD,
+  MAX_LOWER_THIRD_TEXT_LENGTH,
+  type PipBorderStyle,
+  type PipFrameShape,
+  type SceneResolutionPreset,
+  type StageLayoutMode,
 } from '../../types/media';
 
 export const STUDIO_PREFERENCES_STORAGE_KEY =
@@ -40,6 +42,11 @@ export interface StudioWorkspaceProfile {
   readonly sourceMuted: boolean;
   readonly microphoneGain: number;
   readonly microphoneMuted: boolean;
+  readonly autoDuckEnabled: boolean;
+  readonly micProcessingEnabled: boolean;
+  readonly lowerThirdEnabled: boolean;
+  readonly lowerThirdTitle: string;
+  readonly lowerThirdSubtitle: string;
   readonly mirrorPreview: boolean;
   readonly preRollEnabled: boolean;
   readonly shortcutsEnabled: boolean;
@@ -192,6 +199,20 @@ export function sanitizePresetName(raw: string): string {
     .slice(0, MAX_PRESET_NAME_LENGTH);
 }
 
+function sanitizeLowerThirdText(raw: unknown, fallback: string): string {
+  if (typeof raw !== 'string') {
+    return fallback;
+  }
+  let cleaned = '';
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x20 && code !== 0x7f) {
+      cleaned += ch;
+    }
+  }
+  return cleaned.slice(0, MAX_LOWER_THIRD_TEXT_LENGTH);
+}
+
 export function createDefaultWorkspaceProfile(): StudioWorkspaceProfile {
   return {
     layoutMode: 'pip',
@@ -204,6 +225,11 @@ export function createDefaultWorkspaceProfile(): StudioWorkspaceProfile {
     sourceMuted: false,
     microphoneGain: DEFAULT_AUDIO_GAIN,
     microphoneMuted: false,
+    autoDuckEnabled: false,
+    micProcessingEnabled: false,
+    lowerThirdEnabled: DEFAULT_STAGE_LOWER_THIRD.enabled,
+    lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
+    lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
     mirrorPreview: true,
     preRollEnabled: false,
     shortcutsEnabled: true,
@@ -244,6 +270,26 @@ export function sanitizeWorkspaceProfile(raw: unknown): StudioWorkspaceProfile {
       typeof raw.microphoneMuted === 'boolean'
         ? raw.microphoneMuted
         : defaults.microphoneMuted,
+    autoDuckEnabled:
+      typeof raw.autoDuckEnabled === 'boolean'
+        ? raw.autoDuckEnabled
+        : defaults.autoDuckEnabled,
+    micProcessingEnabled:
+      typeof raw.micProcessingEnabled === 'boolean'
+        ? raw.micProcessingEnabled
+        : defaults.micProcessingEnabled,
+    lowerThirdEnabled:
+      typeof raw.lowerThirdEnabled === 'boolean'
+        ? raw.lowerThirdEnabled
+        : defaults.lowerThirdEnabled,
+    lowerThirdTitle: sanitizeLowerThirdText(
+      raw.lowerThirdTitle,
+      defaults.lowerThirdTitle,
+    ),
+    lowerThirdSubtitle: sanitizeLowerThirdText(
+      raw.lowerThirdSubtitle,
+      defaults.lowerThirdSubtitle,
+    ),
     mirrorPreview:
       typeof raw.mirrorPreview === 'boolean'
         ? raw.mirrorPreview
@@ -277,6 +323,11 @@ export function areWorkspaceProfilesEqual(
     a.sourceMuted === b.sourceMuted &&
     a.microphoneGain === b.microphoneGain &&
     a.microphoneMuted === b.microphoneMuted &&
+    a.autoDuckEnabled === b.autoDuckEnabled &&
+    a.micProcessingEnabled === b.micProcessingEnabled &&
+    a.lowerThirdEnabled === b.lowerThirdEnabled &&
+    a.lowerThirdTitle === b.lowerThirdTitle &&
+    a.lowerThirdSubtitle === b.lowerThirdSubtitle &&
     a.mirrorPreview === b.mirrorPreview &&
     a.preRollEnabled === b.preRollEnabled &&
     a.shortcutsEnabled === b.shortcutsEnabled
@@ -302,6 +353,11 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       sourceMuted: false,
       microphoneGain: 1.2,
       microphoneMuted: false,
+      autoDuckEnabled: false,
+      micProcessingEnabled: false,
+      lowerThirdEnabled: false,
+      lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
+      lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
       mirrorPreview: true,
       preRollEnabled: true,
       shortcutsEnabled: true,
@@ -324,6 +380,11 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       sourceMuted: false,
       microphoneGain: 1.15,
       microphoneMuted: false,
+      autoDuckEnabled: false,
+      micProcessingEnabled: false,
+      lowerThirdEnabled: false,
+      lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
+      lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
       mirrorPreview: true,
       preRollEnabled: false,
       shortcutsEnabled: true,
@@ -347,6 +408,11 @@ export const BUILT_IN_STUDIO_PRESETS: readonly StudioSavedPreset[] = [
       sourceMuted: false,
       microphoneGain: 1.3,
       microphoneMuted: false,
+      autoDuckEnabled: false,
+      micProcessingEnabled: false,
+      lowerThirdEnabled: false,
+      lowerThirdTitle: DEFAULT_STAGE_LOWER_THIRD.title,
+      lowerThirdSubtitle: DEFAULT_STAGE_LOWER_THIRD.subtitle,
       mirrorPreview: true,
       preRollEnabled: true,
       shortcutsEnabled: true,

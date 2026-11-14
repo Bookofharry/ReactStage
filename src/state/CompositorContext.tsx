@@ -33,8 +33,13 @@ import {
   type PipFrameShape,
   type SceneResolutionPreset,
   type StageLayoutMode,
+  type StageLowerThirdConfig,
   type TelestratorTool,
 } from '../types/media';
+import {
+  buildSnapshotFileName,
+  exportCanvasPngSnapshot,
+} from '../utils/snapshot';
 import { useCapture } from './CaptureContext';
 import { useSourcePlayback } from './PlaybackContext';
 
@@ -56,6 +61,9 @@ export interface SceneCompositorContextValue {
   readonly resetPipRect: () => void;
   readonly setSplitRatio: (ratio: number) => void;
   readonly resetSplitRatio: () => void;
+  readonly setLowerThird: (patch: Partial<StageLowerThirdConfig>) => void;
+  readonly toggleLowerThird: () => void;
+  readonly captureSnapshotPng: (sourceLabel?: string | null) => Promise<boolean>;
   readonly addAnnotation: (annotation: StageAnnotation) => void;
   readonly undoAnnotation: () => boolean;
   readonly clearAnnotations: () => void;
@@ -129,7 +137,7 @@ export function CompositorProvider({
     activeCompositor.setCameraStream(captureSnapshot.activeCameraStream);
   }, [activeCompositor, captureSnapshot.activeCameraStream]);
 
-  // Refresh scene frame immediately when source media lifecycle status or URL changes
+  // Refresh scene frame immediately when source media lifecycle status, mode, or URL changes
   useEffect(() => {
     activeCompositor.setSourceVideo(videoRef.current);
     activeCompositor.renderFrameNow();
@@ -137,6 +145,7 @@ export function CompositorProvider({
     activeCompositor,
     videoRef,
     playbackState.status,
+    playbackState.sourceMode,
     playbackState.objectUrl,
   ]);
 
@@ -215,6 +224,34 @@ export function CompositorProvider({
   const resetSplitRatio = useCallback(() => {
     activeCompositor.setSplitRatio(DEFAULT_SPLIT_RATIO);
   }, [activeCompositor]);
+
+  const setLowerThird = useCallback(
+    (patch: Partial<StageLowerThirdConfig>) => {
+      activeCompositor.setLowerThird(patch);
+    },
+    [activeCompositor],
+  );
+
+  const toggleLowerThird = useCallback(() => {
+    const current = activeCompositor.getState().lowerThird.enabled;
+    activeCompositor.setLowerThird({ enabled: !current });
+  }, [activeCompositor]);
+
+  const captureSnapshotPng = useCallback(
+    async (sourceLabel?: string | null): Promise<boolean> => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        return false;
+      }
+      activeCompositor.attachCanvas(canvas);
+      activeCompositor.renderFrameNow();
+      const fileName = buildSnapshotFileName(
+        sourceLabel ?? playbackState.metadata?.fileName ?? null,
+      );
+      return exportCanvasPngSnapshot(canvas, fileName);
+    },
+    [activeCompositor, playbackState.metadata?.fileName],
+  );
 
   const addAnnotation = useCallback(
     (annotation: StageAnnotation) => {
@@ -303,6 +340,9 @@ export function CompositorProvider({
       resetPipRect,
       setSplitRatio,
       resetSplitRatio,
+      setLowerThird,
+      toggleLowerThird,
+      captureSnapshotPng,
       addAnnotation,
       undoAnnotation,
       clearAnnotations,
@@ -318,6 +358,7 @@ export function CompositorProvider({
       activeTool,
       addAnnotation,
       captureSceneStream,
+      captureSnapshotPng,
       clearAnnotations,
       movePipBy,
       pushLaserPoint,
@@ -326,6 +367,7 @@ export function CompositorProvider({
       resizePipBy,
       setDraftAnnotation,
       setLayoutMode,
+      setLowerThird,
       setPipBorderStyle,
       setPipFrameShape,
       setPipRect,
@@ -335,6 +377,7 @@ export function CompositorProvider({
       startSceneLoop,
       state,
       stopSceneLoop,
+      toggleLowerThird,
       toggleSceneLoop,
       undoAnnotation,
     ],

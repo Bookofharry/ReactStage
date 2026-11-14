@@ -164,6 +164,11 @@ Understanding how every `SourcePlayer` operation interacts with `<video>`, `Canv
 
 ---
 
-## 8. Static Deployment & GitHub Pages Base Path
+## 8. Static Deployment, Offline PWA & GitHub Pages Base Path
 - `src/utils/base-path.ts` resolves Vite's `base` option to `/` in development and `/ReactStage/` in production (overridable via `VITE_BASE_PATH` in `.github/workflows/deploy.yml`).
-- Public assets in `index.html` use relative paths (`./favicon.svg`).
+- Public assets in `index.html` use relative paths (`./favicon.svg`, `./manifest.webmanifest`, `./pwa-192.png`, `./pwa-512.png`).
+- `vite.config.ts` (`reactStageOfflineManifestPlugin`) generates `dist/offline-manifest.json` at build time so `public/sw.js` precaches every hashed JS/CSS bundle and serves the entire reaction studio offline via a network-first-with-cache-fallback strategy while ignoring `blob:` URLs.
+- **Tasks 11–13 Extensions**:
+  - `HtmlVideoSourcePlayer.startScreenShare()` binds `getDisplayMedia` streams (`video.muted = true`, `sourceMode = 'screen'`) and `BrowserAudioMixer.attachSourceStream()` routes optional tab/system audio exclusively to `sourceAnalyser` + `masterMixBus` (zero speaker echo).
+  - `BrowserAudioMixer` supports zero-tick **Smart Voice Auto-Ducking** (`setAutoDuckEnabled`) and **Broadcast Vocal Processing** (`85 Hz` `BiquadFilterNode` + `4:1` `DynamicsCompressorNode`, `setMicProcessingEnabled`).
+  - `CanvasSceneCompositor` renders PIP-collision-aware **Lower-Third** title/subtitle banners (`setLowerThird`, `L` hotkey), and `src/utils/snapshot.ts` exports lossless `.png` thumbnails with immediate `URL.revokeObjectURL` cleanup.

@@ -21,6 +21,7 @@ import { CaptureProvider } from './state/CaptureContext';
 import { CompositorProvider } from './state/CompositorContext';
 import { ExportProvider } from './state/ExportContext';
 import { SourcePlaybackProvider } from './state/PlaybackContext';
+import { PwaProvider } from './state/PwaContext';
 import { RecordingSessionProvider } from './state/RecordingSessionContext';
 import { StudioPreferencesProvider } from './state/StudioPreferencesContext';
 import { StudioShortcutsProvider } from './state/StudioShortcutsContext';
@@ -52,7 +53,8 @@ export function App({
   countdownStepMs,
 }: AppProps = {}) {
   return (
-    <CaptureProvider manager={captureManager} levelMeter={levelMeter}>
+    <PwaProvider>
+      <CaptureProvider manager={captureManager} levelMeter={levelMeter}>
       <SourcePlaybackProvider player={player}>
         <AudioMixerProvider mixer={audioMixer}>
           <CompositorProvider compositor={compositor}>
@@ -108,6 +110,7 @@ export function App({
         </AudioMixerProvider>
       </SourcePlaybackProvider>
     </CaptureProvider>
+    </PwaProvider>
   );
 }
 

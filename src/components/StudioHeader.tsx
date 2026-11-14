@@ -1,4 +1,5 @@
 import { useSourcePlayback } from '../state/PlaybackContext';
+import { usePwaStatus } from '../state/PwaContext';
 import {
   useRecordingSession,
   useRecordingTelemetry,
@@ -9,6 +10,7 @@ import type { RecordingLifecycleStatus } from '../types/media';
 import { formatTimecode } from '../utils/format';
 import {
   BookmarkPresetIcon,
+  InstallAppIcon,
   KeyboardIcon,
   StageLogoIcon,
 } from './StudioIcons';
@@ -93,9 +95,15 @@ function HeaderRecordingClock() {
 
 export function StudioHeader() {
   const { state: playback } = useSourcePlayback();
+  const { isOffline, canInstall, promptInstall } = usePwaStatus();
   const { openPresetsModal, snapshot: prefsSnapshot } = useStudioPreferences();
   const { openShortcutsModal } = useStudioShortcuts();
-  const sourceTimeLabel = `${formatTimecode(playback.currentTimeSec, true)} / ${formatTimecode(playback.durationSec, true)}`;
+  const sourceTimeLabel =
+    playback.sourceMode === 'screen'
+      ? playback.status === 'paused'
+        ? 'Live (Frozen)'
+        : 'Live Screen'
+      : `${formatTimecode(playback.currentTimeSec, true)} / ${formatTimecode(playback.durationSec, true)}`;
 
   return (
     <header className="border-b border-slate-800 bg-slate-900/95 backdrop-blur">
@@ -120,6 +128,15 @@ export function StudioHeader() {
                 <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300 sm:px-2.5 sm:text-xs">
                   Local-First · Zero Uploads
                 </span>
+                {isOffline && (
+                  <span
+                    data-testid="header-offline-badge"
+                    role="status"
+                    className="rounded-full border border-sky-400/40 bg-sky-400/15 px-2 py-0.5 text-[11px] font-semibold text-sky-200 sm:px-2.5 sm:text-xs"
+                  >
+                    Offline Ready
+                  </span>
+                )}
               </div>
               <p className="truncate text-xs text-slate-300">
                 Open-source video reaction studio
@@ -176,6 +193,21 @@ export function StudioHeader() {
 
             <HeaderRecordingClock />
           </div>
+
+          {canInstall && (
+            <button
+              type="button"
+              data-testid="install-pwa-button"
+              aria-label="Install ReactStage desktop app"
+              onClick={() => {
+                void promptInstall();
+              }}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+            >
+              <InstallAppIcon className="h-4 w-4" />
+              <span>Install App</span>
+            </button>
+          )}
 
           <button
             type="button"

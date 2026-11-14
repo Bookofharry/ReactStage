@@ -62,6 +62,8 @@ export interface AudioMixerStateSnapshot {
   readonly requiresUserGesture: boolean;
   readonly sourceChannel: AudioChannelConfig;
   readonly microphoneChannel: AudioChannelConfig;
+  readonly autoDuckEnabled: boolean;
+  readonly micProcessingEnabled: boolean;
   readonly sourceAvailability: SourceAudioAvailability;
   readonly sourceLabel: string | null;
   readonly microphoneAvailability: MicrophoneAudioAvailability;
@@ -85,6 +87,8 @@ export interface AudioMeterSnapshot {
   readonly masterPeak: number;
   readonly masterLevelPercent: number;
   readonly clipping: boolean;
+  readonly isDucking: boolean;
+  readonly duckGainMultiplier: number;
 }
 
 /**
@@ -109,6 +113,10 @@ export interface AudioMixer {
   resume(): Promise<void>;
   suspendMonitoring(): void;
   attachSourceElement(element: HTMLMediaElement | null): void;
+  attachSourceStream?(
+    stream: MediaStream | null,
+    label?: string | null,
+  ): void;
   updateSourceDescriptor(descriptor: SourceAudioDescriptor): void;
   attachMicrophoneStream(
     stream: MediaStream | null,
@@ -116,6 +124,8 @@ export interface AudioMixer {
   ): void;
   setSourceChannel(config: AudioChannelConfig): void;
   setMicrophoneChannel(config: AudioChannelConfig): void;
+  setAutoDuckEnabled?(enabled: boolean): void;
+  setMicProcessingEnabled?(enabled: boolean): void;
   getMixedOutputStream(): MediaStream | null;
   getState(): AudioMixerStateSnapshot;
   getMeterSnapshot(): AudioMeterSnapshot;

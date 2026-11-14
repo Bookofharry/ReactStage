@@ -54,8 +54,11 @@ export function PlaybackControls() {
     state.status === 'paused' ||
     state.status === 'ended';
 
+  const isScreenMode = state.sourceMode === 'screen';
+  const canScrubTimeline = isPlayable && !isScreenMode;
   const isPlaying = state.status === 'playing';
-  const sliderMax = state.durationSec > 0 ? state.durationSec : 0;
+  const sliderMax =
+    !isScreenMode && state.durationSec > 0 ? state.durationSec : 0;
 
   const handleSeekChange = (event: ChangeEvent<HTMLInputElement>) => {
     seek(Number(event.currentTarget.value));
@@ -112,8 +115,11 @@ export function PlaybackControls() {
                 data-testid="source-playback-time"
                 className="font-mono font-semibold text-slate-100 tabular-nums"
               >
-                {formatTimecode(state.currentTimeSec, true)} /{' '}
-                {formatTimecode(state.durationSec, true)}
+                {isScreenMode
+                  ? state.status === 'paused'
+                    ? 'Live Frozen'
+                    : 'Live Stream'
+                  : `${formatTimecode(state.currentTimeSec, true)} / ${formatTimecode(state.durationSec, true)}`}
               </span>
             </div>
 
@@ -133,9 +139,13 @@ export function PlaybackControls() {
             min={0}
             max={sliderMax}
             step={0.05}
-            value={isPlayable ? state.currentTimeSec : 0}
-            disabled={!isPlayable}
-            aria-valuetext={`${formatSpokenDuration(state.currentTimeSec)} of ${formatSpokenDuration(state.durationSec)}`}
+            value={canScrubTimeline ? state.currentTimeSec : 0}
+            disabled={!canScrubTimeline}
+            aria-valuetext={
+              isScreenMode
+                ? 'Live screen capture stream'
+                : `${formatSpokenDuration(state.currentTimeSec)} of ${formatSpokenDuration(state.durationSec)}`
+            }
             onChange={handleSeekChange}
             className="h-2 w-full cursor-pointer rounded-lg bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           />
@@ -149,7 +159,13 @@ export function PlaybackControls() {
               data-testid="play-pause-button"
               disabled={!isPlayable}
               aria-label={
-                isPlaying ? 'Pause source video' : 'Play source video'
+                isScreenMode
+                  ? isPlaying
+                    ? 'Freeze live screen frame'
+                    : 'Resume live screen stream'
+                  : isPlaying
+                    ? 'Pause source video'
+                    : 'Play source video'
               }
               onClick={handlePlayPauseClick}
               className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
@@ -157,12 +173,12 @@ export function PlaybackControls() {
               {isPlaying ? (
                 <>
                   <PauseIcon className="h-4 w-4" />
-                  <span>Pause</span>
+                  <span>{isScreenMode ? 'Freeze' : 'Pause'}</span>
                 </>
               ) : (
                 <>
                   <PlayIcon className="h-4 w-4" />
-                  <span>Play</span>
+                  <span>{isScreenMode && isPlayable ? 'Resume' : 'Play'}</span>
                 </>
               )}
             </button>
@@ -170,7 +186,7 @@ export function PlaybackControls() {
             <button
               type="button"
               data-testid="rewind-button"
-              disabled={!isPlayable}
+              disabled={!canScrubTimeline}
               aria-label="Rewind 10s"
               onClick={() => rewind(10)}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
@@ -182,7 +198,7 @@ export function PlaybackControls() {
             <button
               type="button"
               data-testid="restart-button"
-              disabled={!isPlayable}
+              disabled={!canScrubTimeline}
               aria-label="Restart source video from beginning"
               onClick={restart}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
@@ -204,9 +220,10 @@ export function PlaybackControls() {
               <select
                 id="playback-speed-select"
                 data-testid="playback-speed-select"
+                disabled={isScreenMode}
                 value={state.playbackRate}
                 onChange={handleSpeedChange}
-                className="rounded bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                className="rounded bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {SUPPORTED_PLAYBACK_SPEEDS.map((speed) => (
                   <option key={speed} value={speed}>

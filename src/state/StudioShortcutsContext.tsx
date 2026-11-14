@@ -77,6 +77,7 @@ export function StudioShortcutsProvider({
     activeTool,
     setActiveTool,
     setLayoutMode,
+    toggleLowerThird,
     undoAnnotation,
     clearAnnotations,
   } = useSceneCompositor();
@@ -292,6 +293,12 @@ export function StudioShortcutsProvider({
           return;
         }
 
+        if (lower === 'l') {
+          event.preventDefault();
+          toggleLowerThird();
+          return;
+        }
+
         if (lower === 'z') {
           if (compositorState.annotationCount > 0) {
             event.preventDefault();
@@ -359,6 +366,7 @@ export function StudioShortcutsProvider({
     setLayoutMode,
     shortcutsEnabled,
     stopRecording,
+    toggleLowerThird,
     toggleMicrophoneMute,
     toggleSourceMute,
     togglePauseRecording,

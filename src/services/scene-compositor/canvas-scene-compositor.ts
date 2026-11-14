@@ -1,8 +1,11 @@
-import type {
-  PipBorderStyle,
-  PipFrameShape,
-  SceneResolutionPreset,
-  StageLayoutMode,
+import {
+  DEFAULT_STAGE_LOWER_THIRD,
+  MAX_LOWER_THIRD_TEXT_LENGTH,
+  type PipBorderStyle,
+  type PipFrameShape,
+  type SceneResolutionPreset,
+  type StageLayoutMode,
+  type StageLowerThirdConfig,
 } from '../../types/media';
 import type {
   CompositorConfig,
@@ -222,6 +225,49 @@ function arePipRectsEqual(a: PipOverlayRect, b: PipOverlayRect): boolean {
   );
 }
 
+function sanitizeLowerThirdField(raw: string): string {
+  let out = '';
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code >= 0x20 && code !== 0x7f) {
+      out += ch;
+    }
+  }
+  return out.slice(0, MAX_LOWER_THIRD_TEXT_LENGTH);
+}
+
+function sanitizeLowerThirdConfig(
+  patch: Partial<StageLowerThirdConfig> | undefined,
+  fallback: StageLowerThirdConfig,
+): StageLowerThirdConfig {
+  if (!patch) {
+    return fallback;
+  }
+  return {
+    enabled:
+      typeof patch.enabled === 'boolean' ? patch.enabled : fallback.enabled,
+    title:
+      typeof patch.title === 'string'
+        ? sanitizeLowerThirdField(patch.title)
+        : fallback.title,
+    subtitle:
+      typeof patch.subtitle === 'string'
+        ? sanitizeLowerThirdField(patch.subtitle)
+        : fallback.subtitle,
+  };
+}
+
+function areLowerThirdsEqual(
+  a: StageLowerThirdConfig,
+  b: StageLowerThirdConfig,
+): boolean {
+  return (
+    a.enabled === b.enabled &&
+    a.title === b.title &&
+    a.subtitle === b.subtitle
+  );
+}
+
 function areErrorsEqual(
   a: CompositorError | null,
   b: CompositorError | null,
@@ -274,6 +320,10 @@ export function createDefaultCompositorConfig(
     pipFrameShape: overrides.pipFrameShape ?? 'rect',
     pipBorderStyle: overrides.pipBorderStyle ?? 'sky',
     splitRatio: clampSplitRatio(overrides.splitRatio ?? DEFAULT_SPLIT_RATIO),
+    lowerThird: sanitizeLowerThirdConfig(
+      overrides.lowerThird,
+      DEFAULT_STAGE_LOWER_THIRD,
+    ),
   };
 }
 
@@ -454,6 +504,9 @@ export class CanvasSceneCompositor implements SceneCompositor {
       patch.splitRatio !== undefined
         ? clampSplitRatio(patch.splitRatio)
         : this.config.splitRatio;
+    const nextLowerThird = patch.lowerThird
+      ? sanitizeLowerThirdConfig(patch.lowerThird, this.config.lowerThird)
+      : this.config.lowerThird;
 
     const changed =
       nextPreset !== this.config.resolutionPreset ||
@@ -464,7 +517,8 @@ export class CanvasSceneCompositor implements SceneCompositor {
       !arePipRectsEqual(nextPipRect, this.config.pipRect) ||
       nextPipFrameShape !== this.config.pipFrameShape ||
       nextPipBorderStyle !== this.config.pipBorderStyle ||
-      nextSplitRatio !== this.config.splitRatio;
+      nextSplitRatio !== this.config.splitRatio ||
+      !areLowerThirdsEqual(nextLowerThird, this.config.lowerThird);
 
     if (!changed) {
       return;
@@ -480,6 +534,7 @@ export class CanvasSceneCompositor implements SceneCompositor {
       pipFrameShape: nextPipFrameShape,
       pipBorderStyle: nextPipBorderStyle,
       splitRatio: nextSplitRatio,
+      lowerThird: nextLowerThird,
     };
 
     if (this.canvas) {
@@ -520,6 +575,12 @@ export class CanvasSceneCompositor implements SceneCompositor {
 
   public setSplitRatio(ratio: number): void {
     this.configure({ splitRatio: clampSplitRatio(ratio) });
+  }
+
+  public setLowerThird(patch: Partial<StageLowerThirdConfig>): void {
+    this.configure({
+      lowerThird: sanitizeLowerThirdConfig(patch, this.config.lowerThird),
+    });
   }
 
   public getAnnotations(): readonly StageAnnotation[] {
@@ -999,6 +1060,7 @@ export class CanvasSceneCompositor implements SceneCompositor {
       }
     }
 
+    this.renderLowerThirdLayer(ctx, width, height);
     this.renderTelestratorLayer(ctx, width, height, timestampMs);
 
     const activeSourceChanged = sourceDrawn !== this.hasActiveSourceFrame;
@@ -1228,6 +1290,117 @@ export class CanvasSceneCompositor implements SceneCompositor {
       ctx.restore();
     }
     return drawn;
+  }
+
+  private renderLowerThirdLayer(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ): void {
+    const lt = this.config.lowerThird;
+    if (!lt.enabled) {
+      return;
+    }
+
+    const titleText = lt.title.trim();
+    const subtitleText = lt.subtitle.trim();
+    if (!titleText && !subtitleText) {
+      return;
+    }
+
+    const hasSave =
+      typeof (ctx as Partial<CanvasRenderingContext2D>).save === 'function';
+    if (hasSave) {
+      ctx.save();
+    }
+
+    const marginX = Math.round(width * 0.032);
+    const marginBottom = Math.round(height * 0.048);
+    const titleFontPx = Math.max(18, Math.round(height * 0.031));
+    const subFontPx = Math.max(13, Math.round(titleFontPx * 0.68));
+    const accentW = Math.max(5, Math.round(width * 0.0045));
+    const padX = Math.max(14, Math.round(width * 0.015));
+    const padY = Math.max(10, Math.round(height * 0.015));
+    const lineGap = titleText && subtitleText ? Math.round(titleFontPx * 0.28) : 0;
+
+    let measuredTitleW = 0;
+    if (titleText) {
+      ctx.font = `700 ${titleFontPx}px system-ui, -apple-system, sans-serif`;
+      measuredTitleW =
+        typeof (ctx as Partial<CanvasRenderingContext2D>).measureText ===
+        'function'
+          ? ctx.measureText(titleText).width
+          : titleText.length * titleFontPx * 0.56;
+    }
+
+    let measuredSubW = 0;
+    if (subtitleText) {
+      ctx.font = `600 ${subFontPx}px system-ui, -apple-system, sans-serif`;
+      measuredSubW =
+        typeof (ctx as Partial<CanvasRenderingContext2D>).measureText ===
+        'function'
+          ? ctx.measureText(subtitleText).width
+          : subtitleText.length * subFontPx * 0.54;
+    }
+
+    const minCardW = Math.round(width * 0.22);
+    const maxCardW = Math.round(width * 0.62);
+    const contentW = Math.max(measuredTitleW, measuredSubW);
+    const cardW = Math.min(
+      maxCardW,
+      Math.max(minCardW, Math.round(accentW + padX * 2 + contentW)),
+    );
+    const textBlockH =
+      (titleText ? titleFontPx : 0) +
+      lineGap +
+      (subtitleText ? subFontPx : 0);
+    const cardH = Math.round(padY * 2 + textBlockH);
+
+    // Avoid overlapping a bottom-left PIP camera bubble
+    const pipOverlapsBottomLeft =
+      this.config.layoutMode === 'pip' &&
+      this.config.pipRect.x < 0.42 &&
+      this.config.pipRect.y + this.config.pipRect.height > 0.72;
+
+    const cardX = pipOverlapsBottomLeft
+      ? Math.max(marginX, width - marginX - cardW)
+      : marginX;
+    const cardY = Math.max(marginBottom, height - marginBottom - cardH);
+
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(cardX, cardY, cardW, cardH);
+
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = Math.max(1.5, Math.round(width * 0.0014));
+    ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(cardX, cardY, accentW, cardH);
+
+    const textStartX = cardX + accentW + padX;
+    const maxTextW = Math.max(40, cardW - accentW - padX * 2);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    let cursorY = cardY + padY;
+    if (titleText) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = `700 ${titleFontPx}px system-ui, -apple-system, sans-serif`;
+      ctx.fillText(titleText, textStartX, cursorY, maxTextW);
+      cursorY += titleFontPx + lineGap;
+    }
+
+    if (subtitleText) {
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = `600 ${subFontPx}px system-ui, -apple-system, sans-serif`;
+      ctx.fillText(subtitleText, textStartX, cursorY, maxTextW);
+    }
+
+    if (hasSave) {
+      ctx.restore();
+    }
   }
 
   private renderTelestratorLayer(
@@ -1723,6 +1896,7 @@ export class CanvasSceneCompositor implements SceneCompositor {
       pipFrameShape: this.config.pipFrameShape,
       pipBorderStyle: this.config.pipBorderStyle,
       splitRatio: this.config.splitRatio,
+      lowerThird: this.config.lowerThird,
       annotationCount: this.annotations.length,
       hasSourceElement: this.sourceVideo !== null,
       hasCameraStream: this.cameraStream !== null,
@@ -1764,6 +1938,7 @@ export class CanvasSceneCompositor implements SceneCompositor {
       prevState.pipFrameShape !== nextState.pipFrameShape ||
       prevState.pipBorderStyle !== nextState.pipBorderStyle ||
       prevState.splitRatio !== nextState.splitRatio ||
+      !areLowerThirdsEqual(prevState.lowerThird, nextState.lowerThird) ||
       prevState.annotationCount !== nextState.annotationCount ||
       prevState.hasSourceElement !== nextState.hasSourceElement ||
       prevState.hasCameraStream !== nextState.hasCameraStream ||

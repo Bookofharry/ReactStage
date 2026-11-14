@@ -15,6 +15,9 @@ import {
   type SourceAudioDescriptor,
 } from '../interfaces/audio-mixer';
 
+export const AUTO_DUCK_SPEECH_RMS_THRESHOLD = 0.025;
+export const AUTO_DUCK_TARGET_MULTIPLIER = 0.28;
+
 export interface MixerAudioParamLike {
   value: number;
 }
@@ -26,6 +29,21 @@ export interface MixerConnectableNodeLike {
 
 export interface MixerGainNodeLike extends MixerConnectableNodeLike {
   readonly gain: MixerAudioParamLike;
+}
+
+export interface MixerBiquadFilterNodeLike extends MixerConnectableNodeLike {
+  type: BiquadFilterType;
+  readonly frequency: MixerAudioParamLike;
+  readonly Q: MixerAudioParamLike;
+}
+
+export interface MixerDynamicsCompressorNodeLike
+  extends MixerConnectableNodeLike {
+  readonly threshold: MixerAudioParamLike;
+  readonly knee: MixerAudioParamLike;
+  readonly ratio: MixerAudioParamLike;
+  readonly attack: MixerAudioParamLike;
+  readonly release: MixerAudioParamLike;
 }
 
 export interface MixerAnalyserNodeLike extends MixerConnectableNodeLike {
@@ -52,6 +70,8 @@ export interface MixerAudioContextLike {
   ): MixerMediaElementSourceNodeLike;
   createMediaStreamSource(stream: MediaStream): MixerMediaStreamSourceNodeLike;
   createMediaStreamDestination(): MixerMediaStreamDestinationNodeLike;
+  createBiquadFilter?(): MixerBiquadFilterNodeLike;
+  createDynamicsCompressor?(): MixerDynamicsCompressorNodeLike;
   resume(): Promise<void>;
   close(): Promise<void>;
   addEventListener?: (type: 'statechange', listener: () => void) => void;
@@ -101,6 +121,8 @@ export const IDLE_AUDIO_METER_SNAPSHOT: AudioMeterSnapshot = {
   masterPeak: 0,
   masterLevelPercent: 0,
   clipping: false,
+  isDucking: false,
+  duckGainMultiplier: 1,
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -227,11 +249,13 @@ function computeTimeDomainMetrics(buffer: Float32Array<ArrayBuffer>): {
  * Concrete Web Audio API implementation of `AudioMixer`.
  *
  * Graph Topology:
- * - `sourceElementNode -> sourceGainNode` (0–200% gain / mute)
+ * - `sourceElementNode -> sourceGainNode` (0–200% gain / mute * auto-duck envelope)
  *     - `-> sourceAnalyserNode` (post-gain source RMS/peak/clipping)
  *     - `-> masterMixBus` (recording mix bus)
  *     - `-> monitorGainNode (1.0) -> audioContext.destination` (at most ONCE; creator hears video)
- * - `micStreamSourceNode -> micGainNode` (0–200% gain / mute)
+ * - `sourceStreamSourceNode (screen/tab audio) -> sourceStreamGainNode` (0–200% * auto-duck)
+ *     - `-> sourceAnalyserNode` + `-> masterMixBus` (NEVER connected to `audioContext.destination` to avoid shared-tab echo)
+ * - `micStreamSourceNode -> [optional 85Hz HPF -> 4:1 Compressor] -> micGainNode` (0–200% gain / mute)
  *     - `-> micAnalyserNode` (post-gain mic RMS/peak/clipping)
  *     - `-> masterMixBus` (recording mix bus; NEVER connected to `audioContext.destination`)
  * - `masterMixBus (1.0)`
@@ -254,9 +278,13 @@ export class BrowserAudioMixer implements AudioMixer {
   private detachContextStateListener: (() => void) | null = null;
 
   private sourceGainNode: MixerGainNodeLike | null = null;
+  private sourceStreamGainNode: MixerGainNodeLike | null = null;
   private micGainNode: MixerGainNodeLike | null = null;
   private monitorGainNode: MixerGainNodeLike | null = null;
   private masterMixBus: MixerGainNodeLike | null = null;
+
+  private micHighPassFilter: MixerBiquadFilterNodeLike | null = null;
+  private micCompressorNode: MixerDynamicsCompressorNodeLike | null = null;
 
   private sourceAnalyserNode: MixerAnalyserNodeLike | null = null;
   private micAnalyserNode: MixerAnalyserNodeLike | null = null;
@@ -272,6 +300,11 @@ export class BrowserAudioMixer implements AudioMixer {
   private isSourceNodeConnected = false;
   private isMonitorConnected = false;
   private detachSourceElementListeners: (() => void) | null = null;
+
+  private sourceStream: MediaStream | null = null;
+  private sourceStreamLabel: string | null = null;
+  private sourceStreamSourceNode: MixerMediaStreamSourceNodeLike | null = null;
+  private detachSourceStreamListeners: (() => void) | null = null;
 
   private sourceDescriptor: SourceAudioDescriptor = {
     hasSource: false,
@@ -293,6 +326,11 @@ export class BrowserAudioMixer implements AudioMixer {
     gain: DEFAULT_AUDIO_GAIN,
     muted: false,
   };
+
+  private autoDuckEnabled = false;
+  private micProcessingEnabled = false;
+  private currentDuckMultiplier = 1;
+  private isCurrentlyDucking = false;
 
   private smoothedSourceRms = 0;
   private smoothedMicRms = 0;
@@ -369,8 +407,11 @@ export class BrowserAudioMixer implements AudioMixer {
       return;
     }
 
-    if (this.sourceElement) {
+    if (this.sourceElement && !this.sourceStream) {
       this.connectSourceElementIfNeeded();
+    }
+    if (this.sourceStream) {
+      this.connectSourceStreamIfNeeded();
     }
     if (this.micStream) {
       this.connectMicStreamIfNeeded();
@@ -397,8 +438,11 @@ export class BrowserAudioMixer implements AudioMixer {
       return;
     }
 
-    if (this.sourceElement) {
+    if (this.sourceElement && !this.sourceStream) {
       this.connectSourceElementIfNeeded();
+    }
+    if (this.sourceStream) {
+      this.connectSourceStreamIfNeeded();
     }
     if (this.micStream) {
       this.connectMicStreamIfNeeded();
@@ -423,7 +467,7 @@ export class BrowserAudioMixer implements AudioMixer {
     this.isMonitoringSuspended = false;
 
     if (this.sourceElement === element) {
-      if (element && this.shouldInitializeForSource(element)) {
+      if (element && !this.sourceStream && this.shouldInitializeForSource(element)) {
         if (this.ensureGraphInitialized()) {
           this.connectSourceElementIfNeeded();
           this.ensureMeterLoopRunning();
@@ -441,7 +485,10 @@ export class BrowserAudioMixer implements AudioMixer {
 
     if (element) {
       this.bindSourceElementEvents(element);
-      if (this.audioContext || this.shouldInitializeForSource(element)) {
+      if (
+        !this.sourceStream &&
+        (this.audioContext || this.shouldInitializeForSource(element))
+      ) {
         if (this.ensureGraphInitialized()) {
           this.connectSourceElementIfNeeded();
           if (this.audioContext?.state === 'suspended') {
@@ -449,6 +496,68 @@ export class BrowserAudioMixer implements AudioMixer {
           } else {
             this.ensureMeterLoopRunning();
           }
+        }
+      }
+    } else if (!this.sourceStream) {
+      this.resetSourceMeters();
+    }
+
+    this.syncState();
+  }
+
+  public attachSourceStream(
+    stream: MediaStream | null,
+    label?: string | null,
+  ): void {
+    if (this.isDisposed) {
+      return;
+    }
+
+    this.isMonitoringSuspended = false;
+    const nextLabel = label !== undefined ? label : this.sourceStreamLabel;
+
+    if (this.sourceStream === stream) {
+      if (nextLabel !== this.sourceStreamLabel) {
+        this.sourceStreamLabel = nextLabel;
+        this.syncState();
+      }
+      if (stream && this.audioContext && !this.sourceStreamSourceNode) {
+        this.connectSourceStreamIfNeeded();
+        this.syncState();
+      }
+      return;
+    }
+
+    this.disconnectSourceStreamNodeOnly();
+    this.sourceStream = stream;
+    this.sourceStreamLabel = stream
+      ? (label ??
+        stream.getAudioTracks()[0]?.label.trim() ??
+        'Shared Screen Audio')
+      : null;
+
+    if (!stream) {
+      if (this.sourceElement && this.shouldInitializeForSource(this.sourceElement)) {
+        if (this.ensureGraphInitialized()) {
+          this.connectSourceElementIfNeeded();
+        }
+      } else {
+        this.resetSourceMeters();
+      }
+      this.syncState();
+      return;
+    }
+
+    const primaryAudioTrack = stream.getAudioTracks()[0];
+    this.bindSourceStreamTrackEvents(stream, primaryAudioTrack);
+
+    if (primaryAudioTrack && primaryAudioTrack.readyState !== 'ended') {
+      if (this.ensureGraphInitialized()) {
+        this.connectSourceStreamIfNeeded();
+        if (this.audioContext?.state !== 'running') {
+          void this.tryResumeInternal(false);
+        } else {
+          this.ensureMeterLoopRunning();
         }
       }
     } else {
@@ -469,6 +578,15 @@ export class BrowserAudioMixer implements AudioMixer {
     if (!descriptor.hasSource) {
       this.probedHasAudioTrack = null;
       this.resetSourceMeters();
+    } else if (this.sourceStream) {
+      if (this.ensureGraphInitialized()) {
+        this.connectSourceStreamIfNeeded();
+        if (descriptor.isPlaying && this.audioContext?.state !== 'running') {
+          void this.tryResumeInternal(false);
+        } else {
+          this.ensureMeterLoopRunning();
+        }
+      }
     } else if (this.sourceElement) {
       if (descriptor.hasAudioTrack !== undefined) {
         this.probedHasAudioTrack = descriptor.hasAudioTrack;
@@ -528,6 +646,7 @@ export class BrowserAudioMixer implements AudioMixer {
       : null;
 
     if (!stream) {
+      this.resetDuckingEnvelope();
       this.resetMicMeters();
       this.syncState();
       return;
@@ -546,6 +665,7 @@ export class BrowserAudioMixer implements AudioMixer {
         }
       }
     } else {
+      this.resetDuckingEnvelope();
       this.resetMicMeters();
     }
 
@@ -601,12 +721,40 @@ export class BrowserAudioMixer implements AudioMixer {
     }
 
     this.microphoneChannel = { gain: nextGain, muted: nextMuted };
+    if (nextMuted || nextGain === 0) {
+      this.resetDuckingEnvelope();
+    }
     this.applyChannelGainsToNodes();
 
     if (nextMuted || nextGain === 0) {
       this.resetMicMeters();
     }
 
+    this.syncState();
+  }
+
+  public setAutoDuckEnabled(enabled: boolean): void {
+    if (this.isDisposed || this.autoDuckEnabled === enabled) {
+      return;
+    }
+    this.autoDuckEnabled = enabled;
+    if (!enabled) {
+      this.resetDuckingEnvelope();
+      this.publishMetersIfChanged({
+        ...this.meters,
+        isDucking: false,
+        duckGainMultiplier: 1,
+      });
+    }
+    this.syncState();
+  }
+
+  public setMicProcessingEnabled(enabled: boolean): void {
+    if (this.isDisposed || this.micProcessingEnabled === enabled) {
+      return;
+    }
+    this.micProcessingEnabled = enabled;
+    this.rewireMicrophoneProcessingChain();
     this.syncState();
   }
 
@@ -625,9 +773,55 @@ export class BrowserAudioMixer implements AudioMixer {
       return this.meters;
     }
 
-    const sourceCanEmit = this.canSourceProduceSignal();
     const micCanEmit = this.canMicProduceSignal();
 
+    // 1. Sample microphone first so Auto-Ducking envelope responds with zero-tick latency
+    let micRms = 0;
+    let micPeak = 0;
+    let rawMicRms = 0;
+    if (micCanEmit) {
+      this.micAnalyserNode.getFloatTimeDomainData(this.micBuffer);
+      const raw = computeTimeDomainMetrics(this.micBuffer);
+      rawMicRms = raw.rms;
+      const ballistic =
+        raw.rms >= this.smoothedMicRms ? raw.rms : this.smoothedMicRms * 0.78;
+      this.smoothedMicRms = ballistic < 0.0005 ? 0 : ballistic;
+      micRms = round4(this.smoothedMicRms);
+      micPeak = round4(raw.peak);
+    } else {
+      this.smoothedMicRms = 0;
+    }
+
+    // 2. Update Auto-Ducking envelope when enabled
+    const sourceCanEmit = this.canSourceProduceSignal();
+    if (this.autoDuckEnabled && sourceCanEmit) {
+      const micSpeaking =
+        micCanEmit && rawMicRms >= AUTO_DUCK_SPEECH_RMS_THRESHOLD;
+      if (micSpeaking) {
+        const nextMult = Math.max(
+          AUTO_DUCK_TARGET_MULTIPLIER,
+          Math.min(0.35, this.currentDuckMultiplier * 0.55),
+        );
+        this.currentDuckMultiplier = round4(nextMult);
+        this.isCurrentlyDucking = true;
+      } else if (this.currentDuckMultiplier < 1) {
+        const released = this.currentDuckMultiplier + 0.24;
+        if (released >= 0.98) {
+          this.currentDuckMultiplier = 1;
+          this.isCurrentlyDucking = false;
+        } else {
+          this.currentDuckMultiplier = round4(released);
+          this.isCurrentlyDucking = true;
+        }
+      } else {
+        this.isCurrentlyDucking = false;
+      }
+      this.applyChannelGainsToNodes();
+    } else if (this.currentDuckMultiplier !== 1 || this.isCurrentlyDucking) {
+      this.resetDuckingEnvelope();
+    }
+
+    // 3. Sample post-gain (and post-ducking) source channel
     let srcRms = 0;
     let srcPeak = 0;
     if (sourceCanEmit) {
@@ -644,20 +838,7 @@ export class BrowserAudioMixer implements AudioMixer {
       this.smoothedSourceRms = 0;
     }
 
-    let micRms = 0;
-    let micPeak = 0;
-    if (micCanEmit) {
-      this.micAnalyserNode.getFloatTimeDomainData(this.micBuffer);
-      const raw = computeTimeDomainMetrics(this.micBuffer);
-      const ballistic =
-        raw.rms >= this.smoothedMicRms ? raw.rms : this.smoothedMicRms * 0.78;
-      this.smoothedMicRms = ballistic < 0.0005 ? 0 : ballistic;
-      micRms = round4(this.smoothedMicRms);
-      micPeak = round4(raw.peak);
-    } else {
-      this.smoothedMicRms = 0;
-    }
-
+    // 4. Sample combined master recording bus
     let masterRms = 0;
     let masterPeak = 0;
     if (sourceCanEmit || micCanEmit) {
@@ -694,6 +875,8 @@ export class BrowserAudioMixer implements AudioMixer {
       masterPeak,
       masterLevelPercent: computeMixerLevelPercent(masterRms),
       clipping,
+      isDucking: this.isCurrentlyDucking,
+      duckGainMultiplier: this.currentDuckMultiplier,
     };
 
     this.publishMetersIfChanged(nextSnapshot);
@@ -710,6 +893,9 @@ export class BrowserAudioMixer implements AudioMixer {
     this.stopMeterLoop();
 
     this.detachSourceElementOnly();
+    this.disconnectSourceStreamNodeOnly();
+    this.sourceStream = null;
+    this.sourceStreamLabel = null;
     this.disconnectMicrophoneNodeOnly();
     this.micStream = null;
     this.micLabel = null;
@@ -720,6 +906,9 @@ export class BrowserAudioMixer implements AudioMixer {
     }
 
     disconnectSafely(this.sourceGainNode);
+    disconnectSafely(this.sourceStreamGainNode);
+    disconnectSafely(this.micHighPassFilter);
+    disconnectSafely(this.micCompressorNode);
     disconnectSafely(this.micGainNode);
     disconnectSafely(this.monitorGainNode);
     disconnectSafely(this.masterMixBus);
@@ -729,6 +918,9 @@ export class BrowserAudioMixer implements AudioMixer {
     this.mixedDestination?.disconnect?.();
 
     this.sourceGainNode = null;
+    this.sourceStreamGainNode = null;
+    this.micHighPassFilter = null;
+    this.micCompressorNode = null;
     this.micGainNode = null;
     this.monitorGainNode = null;
     this.masterMixBus = null;
@@ -754,6 +946,12 @@ export class BrowserAudioMixer implements AudioMixer {
     this.state = this.computeStateSnapshot(this.contextFactory !== null);
     this.stateListeners.clear();
     this.meterListeners.clear();
+  }
+
+  private resetDuckingEnvelope(): void {
+    this.currentDuckMultiplier = 1;
+    this.isCurrentlyDucking = false;
+    this.applyChannelGainsToNodes();
   }
 
   private shouldInitializeForSource(element: HTMLMediaElement): boolean {
@@ -896,7 +1094,7 @@ export class BrowserAudioMixer implements AudioMixer {
     const sourceGain = this.sourceGainNode;
     const monitorGain = this.monitorGainNode;
 
-    if (!element || !ctx || !sourceGain || !monitorGain) {
+    if (!element || !ctx || !sourceGain || !monitorGain || this.sourceStream) {
       return;
     }
 
@@ -943,11 +1141,114 @@ export class BrowserAudioMixer implements AudioMixer {
       this.isSourceNodeConnected = true;
     }
 
-    // Route monitored source audio to creator's speakers AT MOST ONCE
+    // Route monitored local-video audio to creator's speakers AT MOST ONCE
     if (!this.isMonitorConnected) {
       monitorGain.connect(ctx.destination);
       this.isMonitorConnected = true;
     }
+  }
+
+  private connectSourceStreamIfNeeded(): void {
+    const stream = this.sourceStream;
+    const ctx = this.audioContext;
+    const sourceAnalyser = this.sourceAnalyserNode;
+    const masterBus = this.masterMixBus;
+
+    if (
+      !stream ||
+      !ctx ||
+      !sourceAnalyser ||
+      !masterBus ||
+      this.sourceStreamSourceNode
+    ) {
+      return;
+    }
+
+    const track = stream.getAudioTracks()[0];
+    if (!track || track.readyState === 'ended') {
+      return;
+    }
+
+    if (!this.sourceStreamGainNode) {
+      const streamGain = ctx.createGain();
+      // Route captured screen/tab audio into sourceAnalyser + masterMixBus ONLY
+      // NEVER connect to monitorGain/ctx.destination so shared tab audio never echoes!
+      streamGain.connect(sourceAnalyser);
+      streamGain.connect(masterBus);
+      this.sourceStreamGainNode = streamGain;
+      this.applyChannelGainsToNodes();
+    }
+
+    try {
+      const streamSource = ctx.createMediaStreamSource(stream);
+      streamSource.connect(this.sourceStreamGainNode);
+      this.sourceStreamSourceNode = streamSource;
+    } catch {
+      // Non-fatal if stream contains no decodable Web Audio track
+    }
+  }
+
+  private ensureVocalProcessingNodes(
+    ctx: MixerAudioContextLike,
+  ): {
+    readonly hpf: MixerBiquadFilterNodeLike;
+    readonly compressor: MixerDynamicsCompressorNodeLike;
+  } | null {
+    if (this.micHighPassFilter && this.micCompressorNode) {
+      return {
+        hpf: this.micHighPassFilter,
+        compressor: this.micCompressorNode,
+      };
+    }
+
+    if (
+      typeof ctx.createBiquadFilter !== 'function' ||
+      typeof ctx.createDynamicsCompressor !== 'function'
+    ) {
+      return null;
+    }
+
+    const hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.value = 85;
+    hpf.Q.value = 0.707;
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.2;
+
+    this.micHighPassFilter = hpf;
+    this.micCompressorNode = compressor;
+    return { hpf, compressor };
+  }
+
+  private rewireMicrophoneProcessingChain(): void {
+    const streamSource = this.micStreamSourceNode;
+    const micGain = this.micGainNode;
+    const ctx = this.audioContext;
+
+    if (!streamSource || !micGain || !ctx) {
+      return;
+    }
+
+    disconnectSafely(streamSource);
+    disconnectSafely(this.micHighPassFilter);
+    disconnectSafely(this.micCompressorNode);
+
+    if (this.micProcessingEnabled) {
+      const chain = this.ensureVocalProcessingNodes(ctx);
+      if (chain) {
+        streamSource.connect(chain.hpf);
+        chain.hpf.connect(chain.compressor);
+        chain.compressor.connect(micGain);
+        return;
+      }
+    }
+
+    streamSource.connect(micGain);
   }
 
   private connectMicStreamIfNeeded(): void {
@@ -966,8 +1267,8 @@ export class BrowserAudioMixer implements AudioMixer {
 
     try {
       const streamSource = ctx.createMediaStreamSource(stream);
-      streamSource.connect(micGain);
       this.micStreamSourceNode = streamSource;
+      this.rewireMicrophoneProcessingChain();
     } catch (err: unknown) {
       const detail =
         err instanceof Error && err.message
@@ -986,7 +1287,9 @@ export class BrowserAudioMixer implements AudioMixer {
     return !this.isDisposed && expectedGen === this.opGeneration;
   }
 
-  private async tryResumeInternal(fromExplicitUserAction: boolean): Promise<void> {
+  private async tryResumeInternal(
+    fromExplicitUserAction: boolean,
+  ): Promise<void> {
     const ctx = this.audioContext;
     if (!ctx || this.isDisposed) {
       return;
@@ -1027,10 +1330,15 @@ export class BrowserAudioMixer implements AudioMixer {
   }
 
   private applyChannelGainsToNodes(): void {
+    const effectiveSourceGain = this.sourceChannel.muted
+      ? 0
+      : round4(this.sourceChannel.gain * this.currentDuckMultiplier);
+
     if (this.sourceGainNode) {
-      this.sourceGainNode.gain.value = this.sourceChannel.muted
-        ? 0
-        : this.sourceChannel.gain;
+      this.sourceGainNode.gain.value = effectiveSourceGain;
+    }
+    if (this.sourceStreamGainNode) {
+      this.sourceStreamGainNode.gain.value = effectiveSourceGain;
     }
     if (this.micGainNode) {
       this.micGainNode.gain.value = this.microphoneChannel.muted
@@ -1041,7 +1349,7 @@ export class BrowserAudioMixer implements AudioMixer {
 
   private bindSourceElementEvents(element: HTMLMediaElement): void {
     const refreshFromElement = () => {
-      if (this.isDisposed || this.sourceElement !== element) {
+      if (this.isDisposed || this.sourceElement !== element || this.sourceStream) {
         return;
       }
 
@@ -1060,7 +1368,7 @@ export class BrowserAudioMixer implements AudioMixer {
     };
 
     const onEmptied = () => {
-      if (this.isDisposed || this.sourceElement !== element) {
+      if (this.isDisposed || this.sourceElement !== element || this.sourceStream) {
         return;
       }
       this.probedHasAudioTrack = null;
@@ -1087,6 +1395,41 @@ export class BrowserAudioMixer implements AudioMixer {
     };
   }
 
+  private bindSourceStreamTrackEvents(
+    stream: MediaStream,
+    track: MediaStreamTrack | undefined,
+  ): void {
+    if (!track) {
+      return;
+    }
+
+    const onEndedOrMute = () => {
+      if (this.isDisposed || this.sourceStream !== stream) {
+        return;
+      }
+      if (track.readyState === 'ended') {
+        if (this.sourceStreamSourceNode) {
+          disconnectSafely(this.sourceStreamSourceNode);
+          this.sourceStreamSourceNode = null;
+        }
+        this.resetSourceMeters();
+      } else if (track.muted || !track.enabled) {
+        this.resetSourceMeters();
+      }
+      this.syncState();
+    };
+
+    track.addEventListener('ended', onEndedOrMute);
+    track.addEventListener('mute', onEndedOrMute);
+    track.addEventListener('unmute', onEndedOrMute);
+
+    this.detachSourceStreamListeners = () => {
+      track.removeEventListener('ended', onEndedOrMute);
+      track.removeEventListener('mute', onEndedOrMute);
+      track.removeEventListener('unmute', onEndedOrMute);
+    };
+  }
+
   private bindMicrophoneTrackEvents(
     stream: MediaStream,
     track: MediaStreamTrack | undefined,
@@ -1103,6 +1446,7 @@ export class BrowserAudioMixer implements AudioMixer {
         disconnectSafely(this.micStreamSourceNode);
         this.micStreamSourceNode = null;
       }
+      this.resetDuckingEnvelope();
       this.resetMicMeters();
       this.syncState();
     };
@@ -1112,6 +1456,7 @@ export class BrowserAudioMixer implements AudioMixer {
         return;
       }
       if (track.muted || !track.enabled) {
+        this.resetDuckingEnvelope();
         this.resetMicMeters();
       }
       this.syncState();
@@ -1141,6 +1486,17 @@ export class BrowserAudioMixer implements AudioMixer {
     this.sourceElement = null;
   }
 
+  private disconnectSourceStreamNodeOnly(): void {
+    if (this.detachSourceStreamListeners) {
+      this.detachSourceStreamListeners();
+      this.detachSourceStreamListeners = null;
+    }
+    if (this.sourceStreamSourceNode) {
+      disconnectSafely(this.sourceStreamSourceNode);
+      this.sourceStreamSourceNode = null;
+    }
+  }
+
   private disconnectMicrophoneNodeOnly(): void {
     if (this.detachMicTrackListeners) {
       this.detachMicTrackListeners();
@@ -1150,6 +1506,8 @@ export class BrowserAudioMixer implements AudioMixer {
       disconnectSafely(this.micStreamSourceNode);
       this.micStreamSourceNode = null;
     }
+    disconnectSafely(this.micHighPassFilter);
+    disconnectSafely(this.micCompressorNode);
   }
 
   private ensureMeterLoopRunning(): void {
@@ -1206,8 +1564,18 @@ export class BrowserAudioMixer implements AudioMixer {
 
   private canSourceProduceSignal(): boolean {
     const avail = this.resolveSourceAvailability();
-    if (avail === 'no-source' || avail === 'no-audio-track' || avail === 'paused') {
+    if (
+      avail === 'no-source' ||
+      avail === 'no-audio-track' ||
+      avail === 'paused'
+    ) {
       return false;
+    }
+    if (this.sourceStream) {
+      if (!this.sourceStreamSourceNode) {
+        return false;
+      }
+      return !this.sourceChannel.muted && this.sourceChannel.gain > 0;
     }
     if (!this.isSourceNodeConnected) {
       return false;
@@ -1253,7 +1621,8 @@ export class BrowserAudioMixer implements AudioMixer {
     if (
       this.meters.microphoneRms !== 0 ||
       this.meters.microphonePeak !== 0 ||
-      this.meters.microphoneClipping
+      this.meters.microphoneClipping ||
+      this.meters.isDucking
     ) {
       const srcPeak = this.meters.sourcePeak;
       const srcClip = this.meters.sourceClipping;
@@ -1267,11 +1636,24 @@ export class BrowserAudioMixer implements AudioMixer {
         masterPeak: srcPeak,
         masterLevelPercent: this.meters.sourceLevelPercent,
         clipping: srcClip,
+        isDucking: false,
+        duckGainMultiplier: 1,
       });
     }
   }
 
   private resolveSourceAvailability(): SourceAudioAvailability {
+    if (this.sourceStream) {
+      const track = this.sourceStream.getAudioTracks()[0];
+      if (!track || track.readyState === 'ended') {
+        return 'no-audio-track';
+      }
+      if (!track.enabled || track.muted || this.sourceDescriptor.isPaused) {
+        return 'paused';
+      }
+      return 'playing';
+    }
+
     if (!this.sourceElement) {
       return 'no-source';
     }
@@ -1382,17 +1764,23 @@ export class BrowserAudioMixer implements AudioMixer {
       status === 'suspended' ||
       this.currentError?.code === 'CONTEXT_RESUME_FAILED';
 
+    const resolvedSourceLabel =
+      sourceAvailability === 'no-source'
+        ? null
+        : (this.sourceDescriptor.label ??
+          this.sourceStreamLabel ??
+          'Source Video');
+
     return {
       status,
       mixMode,
       requiresUserGesture,
       sourceChannel: this.sourceChannel,
       microphoneChannel: this.microphoneChannel,
+      autoDuckEnabled: this.autoDuckEnabled,
+      micProcessingEnabled: this.micProcessingEnabled,
       sourceAvailability,
-      sourceLabel:
-        sourceAvailability === 'no-source'
-          ? null
-          : (this.sourceDescriptor.label ?? 'Source Video'),
+      sourceLabel: resolvedSourceLabel,
       microphoneAvailability,
       microphoneLabel: this.micStream ? this.micLabel : null,
       hasMixedOutput: !this.isDisposed && this.mixedDestination !== null,
@@ -1425,6 +1813,8 @@ export class BrowserAudioMixer implements AudioMixer {
       a.sourceChannel.muted === b.sourceChannel.muted &&
       a.microphoneChannel.gain === b.microphoneChannel.gain &&
       a.microphoneChannel.muted === b.microphoneChannel.muted &&
+      a.autoDuckEnabled === b.autoDuckEnabled &&
+      a.micProcessingEnabled === b.micProcessingEnabled &&
       a.sourceAvailability === b.sourceAvailability &&
       a.sourceLabel === b.sourceLabel &&
       a.microphoneAvailability === b.microphoneAvailability &&
@@ -1449,7 +1839,9 @@ export class BrowserAudioMixer implements AudioMixer {
       this.meters.masterRms === next.masterRms &&
       this.meters.masterPeak === next.masterPeak &&
       this.meters.masterLevelPercent === next.masterLevelPercent &&
-      this.meters.clipping === next.clipping
+      this.meters.clipping === next.clipping &&
+      this.meters.isDucking === next.isDucking &&
+      this.meters.duckGainMultiplier === next.duckGainMultiplier
     ) {
       return;
     }

@@ -3,5 +3,6 @@ export { validateSourceVideoFile, type CanPlayTypeFn } from './file-validator';
 export {
   HtmlVideoSourcePlayer,
   createInitialPlaybackState,
+  type DisplayMediaFn,
   type HtmlVideoSourcePlayerOptions,
 } from './html-video-source-player';

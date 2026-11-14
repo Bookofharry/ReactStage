@@ -115,3 +115,32 @@ Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`)
 | **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`72 modules transformed`) built in `1.30s` (`dist/index.html` `0.76 kB`, `dist/assets/index-CEa4kooD.css` `39.00 kB` / `7.44 kB` gzip, `dist/assets/index-DQUXHLus.js` `485.25 kB` / `129.26 kB` gzip) targeting `/ReactStage/` base path. |
 | **Chromium E2E + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **19 passed E2E tests** in `26.2s` (including `telestrator-and-chapters.spec.ts` verifying real Coral Red `#ef4444` `<canvas>` pixel composition, circular PIP framing, live chapter markers, UTF-8 `-chapters.txt` disk download, `0` horizontal overflow at `375px`/`768px`/`1280px`/`1440px`, and `0` WCAG 2.1 AA `axe-core` violations). |
 | **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |
+
+---
+
+## Tasks 11–14: Live Screen Share, Smart Voice Auto-Ducking & Mic Clarity, Stage Lower-Thirds & Snapshots, and Offline PWA (COMPLETED)
+
+### Checklist
+- [x] **Task 11 — Live Screen / Window / Browser-Tab Source (`HtmlVideoSourcePlayer.startScreenShare` + `BrowserAudioMixer.attachSourceStream`)**:
+  - [x] `getDisplayMedia` ingestion (`sourceMode: 'screen'`, `video.muted = true` preventing speaker echo, `Infinity`-duration metadata guard, live freeze-frame `Freeze` / `Resume` for Telestrator drawing, and native `"Stop sharing"` `videoTrack` `'ended'` auto-unload).
+  - [x] Dedicated `sourceStreamGainNode` in `BrowserAudioMixer` routing optional captured tab/system audio into `sourceAnalyser` + `masterMixBus` (`0–200%` unified gain, mute, and Auto-Duck) with **zero** paths to `AudioContext.destination`.
+- [x] **Task 12 — Smart Voice Auto-Ducking & Broadcast Mic Processing (`BrowserAudioMixer` + `AudioMixerPanel`)**:
+  - [x] Zero-tick voice-activated **Auto-Duck Video** (`setAutoDuckEnabled`, dipping source/screen audio toward `28%` / `-11 dB` when creator speech exceeds `AUTO_DUCK_SPEECH_RMS_THRESHOLD` and releasing smoothly when silent) with leaf-isolated `DUCKING` meter pill.
+  - [x] Optional **Voice Clarity** (`setMicProcessingEnabled`) inserting an `85 Hz` `BiquadFilterNode` (`highpass`) + `4:1` `DynamicsCompressorNode` vocal limiter upstream of `micGainNode` with zero mic-to-speaker paths.
+- [x] **Task 13 — Stage Lower-Thirds & Instant PNG Thumbnail Snapshots (`CanvasSceneCompositor` + `snapshot.ts`)**:
+  - [x] On-canvas **Lower-Third** title & subtitle banner (`L` hotkey, persisted in `StudioPreferencesStore`, auto-flipping to bottom-right when PIP occupies bottom-left) + one-click lossless **Snapshot PNG** (`exportCanvasPngSnapshot`) with deterministic `URL.revokeObjectURL` cleanup.
+- [x] **Task 14 — Installable Offline Desktop PWA (`manifest.webmanifest` + `sw.js` + `PwaContext`)**:
+  - [x] Web App Manifest + `192×192` & `512×512` PNG icons, build-time `offline-manifest.json` Vite plugin, network-first + offline-precache Service Worker (`public/sw.js`), **Install App** (`beforeinstallprompt`), and **Offline Ready** status badge.
+- [x] Add `<StrictMode>` unit/integration suite (`tests/unit/broadcast-and-pwa.test.tsx`) and Chromium E2E + `axe-core` + offline-reload suite (`tests/e2e/broadcast-and-pwa.spec.ts`).
+
+### Final Release Verification Results (Tasks 1–14 — Release v1.1.0 Gate)
+Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`) on Windows (`Node.js` + `pnpm`):
+
+| Check | Command | Result | Actual Output Details |
+| :--- | :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | **PASS** | `tsc -b` exited `0` with `0` errors across app, node configs, unit tests, and Playwright E2E specs. |
+| **Lint** | `pnpm run lint` | **PASS** | `eslint . --max-warnings 0` (`strictTypeChecked` + `stylisticTypeChecked` + `jsx-a11y`) exited `0` with `0` errors and `0` warnings. |
+| **Unit & Integration Tests** | `pnpm run test` | **PASS** | Vitest `v3.2.7`: **21 passed test suites, 70 passed tests** in `12.29s` (including `broadcast-and-pwa.test.tsx` — 4 tests). |
+| **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`75 modules transformed`) built in `1.62s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-B03csGm4.css` `40.35 kB` / `7.60 kB` gzip, `dist/assets/index-jgQJC_Kb.js` `517.02 kB` / `135.32 kB` gzip) targeting `/ReactStage/` base path. |
+| **Chromium E2E + A11y + Offline PWA** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **21 passed E2E tests** in `38.3s` (including `broadcast-and-pwa.spec.ts` verifying live `getDisplayMedia` screen composition, freeze/resume, Lower-Thirds, Auto-Duck & Voice Clarity, valid `0x89504E47` `.png` disk snapshot download, Service Worker offline reload under `context.setOffline(true)`, `0` horizontal overflow at `375px`/`768px`/`1280px`/`1440px`, and `0` WCAG 2.1 AA `axe-core` violations). |
+| **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |

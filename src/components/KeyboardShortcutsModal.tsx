@@ -30,6 +30,7 @@ const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { keys: ['3'], description: 'Source Video Only layout' },
       { keys: ['4'], description: 'Webcam Only layout' },
       { keys: ['D'], description: 'Toggle stage Telestrator freehand pen' },
+      { keys: ['L'], description: 'Toggle on-canvas Lower-Third title banner' },
       { keys: ['Z', 'Ctrl+Z'], description: 'Undo last stage annotation' },
       { keys: ['C'], description: 'Clear all stage annotations' },
     ],

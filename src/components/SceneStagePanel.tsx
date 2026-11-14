@@ -30,6 +30,7 @@ import {
 import { useSourcePlayback } from '../state/PlaybackContext';
 import { useRecordingSession } from '../state/RecordingSessionContext';
 import {
+  MAX_LOWER_THIRD_TEXT_LENGTH,
   SUPPORTED_SCENE_RESOLUTIONS,
   SUPPORTED_TELESTRATOR_COLORS,
   type PipBorderStyle,
@@ -42,14 +43,17 @@ import { formatBytes } from '../utils/format';
 import {
   AlertIcon,
   ArrowPointerIcon,
+  CameraSnapshotIcon,
   HighlightBoxIcon,
   LaserPointerIcon,
   LayoutCameraIcon,
   LayoutPipIcon,
   LayoutSourceIcon,
   LayoutSplitIcon,
+  LowerThirdIcon,
   PenToolIcon,
   ResizeCornerIcon,
+  ScreenShareIcon,
   TrashIcon,
   UndoIcon,
   UploadVideoIcon,
@@ -257,6 +261,7 @@ export function SceneStagePanel() {
     state: playback,
     videoRef,
     loadFile,
+    startScreenShare,
     unload,
   } = useSourcePlayback();
   const { snapshot: captureSnapshot } = useCapture();
@@ -278,6 +283,9 @@ export function SceneStagePanel() {
     resetPipRect,
     setSplitRatio,
     resetSplitRatio,
+    setLowerThird,
+    toggleLowerThird,
+    captureSnapshotPng,
     addAnnotation,
     undoAnnotation,
     clearAnnotations,
@@ -292,9 +300,32 @@ export function SceneStagePanel() {
   const activeGestureRef = useRef<ActivePointerGesture | null>(null);
   const activeStrokeRef = useRef<ActiveAnnotationStroke | null>(null);
   const strokeCounterRef = useRef(0);
+  const snapshotSavedTimerRef = useRef<number | null>(null);
 
   const [isDraggingFileOver, setIsDraggingFileOver] = useState(false);
   const [isInteractingPip, setIsInteractingPip] = useState(false);
+  const [snapshotJustSaved, setSnapshotJustSaved] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (snapshotSavedTimerRef.current !== null) {
+        window.clearTimeout(snapshotSavedTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCaptureSnapshot = useCallback(async () => {
+    const fileName = await captureSnapshotPng();
+    if (fileName) {
+      setSnapshotJustSaved(true);
+      if (snapshotSavedTimerRef.current !== null) {
+        window.clearTimeout(snapshotSavedTimerRef.current);
+      }
+      snapshotSavedTimerRef.current = window.setTimeout(() => {
+        setSnapshotJustSaved(false);
+      }, 1800);
+    }
+  }, [captureSnapshotPng]);
 
   const isSourcePlayable =
     playback.status === 'ready' ||
@@ -306,10 +337,11 @@ export function SceneStagePanel() {
     captureSnapshot.cameraStatus === 'active' &&
     captureSnapshot.activeCameraStream !== null;
 
-  // Show centered onboarding prompt only when neither source, camera, nor active Telestrator is on stage
+  // Show centered onboarding prompt only when neither source, camera, Lower-Third, nor active Telestrator is on stage
   const showCenteredEmptyPrompt =
     activeTool === 'none' &&
     compositorState.annotationCount === 0 &&
+    !compositorState.lowerThird.enabled &&
     playback.status === 'empty' &&
     !isCameraActive &&
     compositorState.layoutMode !== 'camera-only';
@@ -750,6 +782,22 @@ export function SceneStagePanel() {
 
           <button
             type="button"
+            data-testid="capture-snapshot-button"
+            onClick={() => {
+              void handleCaptureSnapshot();
+            }}
+            className={
+              snapshotJustSaved
+                ? 'inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                : 'inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+            }
+          >
+            <CameraSnapshotIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>{snapshotJustSaved ? 'Saved PNG' : 'Snapshot PNG'}</span>
+          </button>
+
+          <button
+            type="button"
             data-testid="scene-loop-toggle-button"
             aria-pressed={!compositorState.isRunning}
             onClick={toggleSceneLoop}
@@ -875,6 +923,21 @@ export function SceneStagePanel() {
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
+            data-testid="lower-third-toggle-button"
+            aria-pressed={compositorState.lowerThird.enabled}
+            onClick={toggleLowerThird}
+            className={
+              compositorState.lowerThird.enabled
+                ? 'inline-flex min-h-7 items-center gap-1 rounded-md bg-sky-400 px-2.5 py-1 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300'
+                : 'inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400'
+            }
+          >
+            <LowerThirdIcon className="h-3 w-3 shrink-0" />
+            <span>Lower-Third</span>
+          </button>
+
+          <button
+            type="button"
             data-testid="telestrator-undo-button"
             disabled={compositorState.annotationCount === 0}
             onClick={() => {
@@ -903,6 +966,56 @@ export function SceneStagePanel() {
           </button>
         </div>
       </div>
+
+      {/* Contextual On-Canvas Lower-Third Banner Editor */}
+      {compositorState.lowerThird.enabled && (
+        <div
+          data-testid="lower-third-controls-bar"
+          className="grid grid-cols-1 gap-2 border-b border-slate-800 bg-slate-950/75 px-3 py-2 sm:grid-cols-2 sm:px-4"
+        >
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="lower-third-title-input"
+              className="shrink-0 text-xs font-medium text-slate-300"
+            >
+              Headline
+            </label>
+            <input
+              id="lower-third-title-input"
+              data-testid="lower-third-title-input"
+              type="text"
+              maxLength={MAX_LOWER_THIRD_TEXT_LENGTH}
+              value={compositorState.lowerThird.title}
+              onChange={(event) => {
+                setLowerThird({ title: event.currentTarget.value });
+              }}
+              placeholder="Creator or segment headline"
+              className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="lower-third-subtitle-input"
+              className="shrink-0 text-xs font-medium text-slate-300"
+            >
+              Subtitle
+            </label>
+            <input
+              id="lower-third-subtitle-input"
+              data-testid="lower-third-subtitle-input"
+              type="text"
+              maxLength={MAX_LOWER_THIRD_TEXT_LENGTH}
+              value={compositorState.lowerThird.subtitle}
+              onChange={(event) => {
+                setLowerThird({ subtitle: event.currentTarget.value });
+              }}
+              placeholder="Topic, guest, or chapter note"
+              className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Compositor or Playback Inline Error Alerts */}
       {compositorState.lastError && (
@@ -1028,25 +1141,38 @@ export function SceneStagePanel() {
 
         {/* Onboarding Empty Prompt when stage has neither source video nor active camera */}
         {showCenteredEmptyPrompt && (
-          <div className="z-20 flex max-w-md flex-col items-center rounded-xl border border-slate-800/90 bg-slate-950/90 px-5 py-5 text-center shadow-xl sm:px-6 sm:py-7">
-            <div className="mb-2.5 flex h-11 w-11 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10 text-sky-300">
+          <div className="z-20 flex max-w-md flex-col items-center rounded-xl border border-slate-800/90 bg-slate-950/90 px-4 py-3.5 text-center shadow-xl sm:px-6 sm:py-7">
+            <div className="mb-2 hidden h-11 w-11 items-center justify-center rounded-full border border-sky-400/30 bg-sky-400/10 text-sky-300 sm:flex">
               <UploadVideoIcon className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-100 sm:text-base">
-              Import a local video or start your camera
+            <h3 className="text-xs font-semibold text-slate-100 sm:text-base">
+              Import a local video or share a screen
             </h3>
-            <p className="mt-1 text-xs leading-relaxed text-slate-300">
-              Drop a local video onto this scene stage or start your webcam to
-              preview live composition. Files remain 100% on your device.
+            <p className="mt-1 hidden text-xs leading-relaxed text-slate-300 sm:block">
+              Drop a local video, share a browser tab or window, or start your
+              webcam to preview live composition. Everything stays 100% local.
             </p>
-            <button
-              type="button"
-              data-testid="select-video-button"
-              onClick={openFilePicker}
-              className="mt-3.5 inline-flex items-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-xs font-semibold text-slate-950 shadow hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:text-sm"
-            >
-              Select Local Video
-            </button>
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2 sm:mt-3.5">
+              <button
+                type="button"
+                data-testid="select-video-button"
+                onClick={openFilePicker}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                <span>Select Local Video</span>
+              </button>
+              <button
+                type="button"
+                data-testid="share-screen-button"
+                onClick={() => {
+                  void startScreenShare();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:px-3.5 sm:py-2 sm:text-sm"
+              >
+                <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                <span>Share Screen / Tab</span>
+              </button>
+            </div>
             <div className="mt-3 hidden flex-wrap justify-center gap-1.5 text-[11px] text-slate-300 sm:flex">
               <span className="rounded border border-slate-800 bg-slate-900 px-2 py-0.5">
                 MP4 (H.264 / AAC)
@@ -1055,7 +1181,7 @@ export function SceneStagePanel() {
                 WebM (VP8 / VP9 / AV1)
               </span>
               <span className="rounded border border-slate-800 bg-slate-900 px-2 py-0.5">
-                Ogg Video
+                Live Tab / Window
               </span>
             </div>
           </div>
@@ -1293,6 +1419,18 @@ export function SceneStagePanel() {
           <span className="font-semibold text-sky-300">Source Media:</span>
           {playback.metadata ? (
             <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-slate-300">
+              {playback.sourceMode === 'screen' && (
+                <span
+                  data-testid="live-screen-badge"
+                  className="inline-flex items-center gap-1 rounded border border-sky-400/40 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-200"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 rounded-full bg-sky-400"
+                  />
+                  Live Screen
+                </span>
+              )}
               <span
                 data-testid="loaded-file-name"
                 className="max-w-[170px] truncate rounded bg-slate-800 px-2 py-0.5 font-medium text-slate-100 sm:max-w-[260px]"
@@ -1303,12 +1441,18 @@ export function SceneStagePanel() {
               <span className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono text-slate-200">
                 {playback.metadata.width}×{playback.metadata.height}
               </span>
-              <span className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">
-                {formatBytes(playback.metadata.fileSizeBytes)}
-              </span>
+              {playback.sourceMode === 'screen' ? (
+                <span className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">
+                  {playback.hasScreenAudioTrack ? 'Tab Audio' : 'Video Only'}
+                </span>
+              ) : (
+                <span className="rounded bg-slate-800/80 px-1.5 py-0.5 text-slate-200">
+                  {formatBytes(playback.metadata.fileSizeBytes)}
+                </span>
+              )}
               {(playback.status === 'paused' || playback.status === 'ready') && (
                 <span className="rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[11px] font-medium text-sky-300">
-                  Held Frame
+                  {playback.sourceMode === 'screen' ? 'Frozen Frame' : 'Held Frame'}
                 </span>
               )}
               {playback.status === 'ended' && (
@@ -1324,18 +1468,46 @@ export function SceneStagePanel() {
 
         <div className="flex flex-wrap items-center gap-2">
           {playback.status === 'empty' && !showCenteredEmptyPrompt && (
-            <button
-              type="button"
-              data-testid="select-video-button"
-              onClick={openFilePicker}
-              className="rounded-md bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
-            >
-              Select Local Video
-            </button>
+            <>
+              <button
+                type="button"
+                data-testid="select-video-button"
+                onClick={openFilePicker}
+                className="rounded-md bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+              >
+                Select Local Video
+              </button>
+              <button
+                type="button"
+                data-testid="share-screen-button"
+                onClick={() => {
+                  void startScreenShare();
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                <span>Share Screen / Tab</span>
+              </button>
+            </>
           )}
 
           {playback.status !== 'empty' && (
             <>
+              <button
+                type="button"
+                data-testid="share-screen-button"
+                onClick={() => {
+                  void startScreenShare();
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                <span>
+                  {playback.sourceMode === 'screen'
+                    ? 'Change Screen'
+                    : 'Share Screen / Tab'}
+                </span>
+              </button>
               <button
                 type="button"
                 data-testid="replace-video-button"
@@ -1350,7 +1522,7 @@ export function SceneStagePanel() {
                 onClick={unload}
                 className="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               >
-                Unload
+                {playback.sourceMode === 'screen' ? 'Stop Share' : 'Unload'}
               </button>
             </>
           )}

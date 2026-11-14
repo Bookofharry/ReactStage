@@ -4,8 +4,8 @@
 
 ReactStage lets creators import a local video, watch and pause to explain, rewind or slow down key moments, frame their live webcam across four real-time Canvas 2D scene layouts (`Picture-in-Picture`, `Side-by-Side Split`, `Source Only`, `Camera Only`), balance imported video audio (`0–200%`) against live microphone commentary (`0–200%`) through a real-time Web Audio mixer, record synchronized commentary takes locally via `MediaRecorder`, and instantly review and download finalized reaction videos — with **zero backend servers and zero cloud uploads**.
 
-## Current Status: Tasks 1–10 Completed (v1.0.0 Full Local-First Broadcast Reaction Studio)
-- **Local Video Ingestion & Transport (Task 1)**: File picker + drag-and-drop onto stage using zero-copy browser `ObjectURL`s with deterministic `URL.revokeObjectURL` cleanup; play, pause, seek scrubber, `Rewind 10s`, `Restart`, playback speed (`0.5x`–`2x`), and unified `0–200%` volume/mute.
+## Current Status: Tasks 1–14 Completed (v1.1.0 Full Local-First Broadcast & Offline PWA Studio)
+- **Local Video & Live Screen/Tab Ingestion (Tasks 1 & 11)**: File picker + drag-and-drop onto stage using zero-copy browser `ObjectURL`s with deterministic `URL.revokeObjectURL` cleanup, plus **Share Screen / Tab** (`getDisplayMedia`) with echo-free shared-tab audio mixing and live freeze-frame (`Freeze` / `Resume`); play, pause, seek scrubber, `Rewind 10s`, `Restart`, playback speed (`0.5x`–`2x`), and unified `0–200%` volume/mute.
 - **Webcam & Microphone Capture Setup (Task 2)**:
   - Explicit user-action camera and microphone start/stop/cancel (zero permission requests on page load).
   - Independent camera and microphone lifecycles, device enumeration, source selection, live device switching, and unexpected track termination recovery (`BrowserCaptureManager`).
@@ -33,6 +33,12 @@ ReactStage lets creators import a local video, watch and pause to explain, rewin
 - **PIP Webcam Framing & Recording Chapter Markers (Task 10)**:
   - **Rect**, **Rounded**, and **Circle** creator PIP masks + selectable accent borders persisted across sessions.
   - Live recording chapter markers (`B` hotkey + title input) mapped to the monotonic commentary clock, with one-click `<video>` preview seeking, auto-`00:00 Intro` YouTube chapter copy, and local `-chapters.txt` download.
+- **Smart Voice Auto-Ducking & Broadcast Vocal Processing (Task 12)**:
+  - Optional voice-activated **Auto-Duck Video** smoothly dipping source/screen audio while speaking, plus **Voice Clarity** (`85 Hz` rumble high-pass filter + `4:1` vocal compressor/limiter) on the microphone channel.
+- **Stage Lower-Thirds & Instant PNG Snapshots (Task 13)**:
+  - Customizable on-canvas **Lower-Third** headline & subtitle banner (`L` hotkey, PIP-collision-aware) and one-click lossless **Snapshot PNG** thumbnail export.
+- **Installable Offline Desktop PWA (Task 14)**:
+  - Standalone Web App Manifest (`manifest.webmanifest`), build-generated `offline-manifest.json` Service Worker precache (`sw.js`), **Install App** button, and verified 100% offline studio reloads.
 - **GitHub Pages Ready**: Configured with `/ReactStage/` base path (`VITE_BASE_PATH` override supported) and automated GitHub Actions deployment.
 
 ## Quick Start
@@ -52,8 +58,8 @@ pnpm run check
 - [AGENTS.md](./AGENTS.md) — Engineering conventions, strict invariants, and verification gates
 - [PRD.md](./PRD.md) — Product vision, personas, milestone scope, and non-goals
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Isolated state/clock topology, Web Audio graph ownership, compositor geometry, and hardware limitations
-- [TASKS.md](./TASKS.md) — Milestone checklist and verified Tasks 1–10 test/build metrics
-- [DECISIONS.md](./DECISIONS.md) — Architectural Decision Records (ADR-001 through ADR-019)
+- [TASKS.md](./TASKS.md) — Milestone checklist and verified Tasks 1–14 test/build metrics
+- [DECISIONS.md](./DECISIONS.md) — Architectural Decision Records (ADR-001 through ADR-023)
 
 ## License
 [MIT](./LICENSE)

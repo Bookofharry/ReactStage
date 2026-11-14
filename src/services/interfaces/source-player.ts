@@ -26,6 +26,8 @@ export interface SourcePlayer {
   subscribe(listener: SourcePlayerListener): () => void;
   attachVideoElement(element: HTMLVideoElement | null): void;
   loadFile(file: File): void;
+  startScreenShare?(): Promise<void>;
+  getScreenStream?(): MediaStream | null;
   unload(): void;
   play(): Promise<void>;
   pause(): void;

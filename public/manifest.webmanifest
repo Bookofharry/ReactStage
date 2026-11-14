@@ -1,0 +1,32 @@
+{
+  "name": "ReactStage — Local-First Video Reaction Studio",
+  "short_name": "ReactStage",
+  "description": "Free, open-source, 100% local-first browser video reaction studio. Import local videos or share screens, mix live webcam and microphone commentary, annotate with Telestrator, and export synchronized recordings offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "categories": ["video", "photo", "education", "productivity"],
+  "icons": [
+    {
+      "src": "./pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

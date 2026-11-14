@@ -684,3 +684,108 @@ export function CopyClipboardIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function ScreenShareIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+      <polyline points="9 10 12 7 15 10" />
+      <line x1="12" y1="7" x2="12" y2="13" />
+    </svg>
+  );
+}
+
+export function LowerThirdIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="6" y1="14" x2="15" y2="14" />
+      <line x1="6" y1="17" x2="12" y2="17" />
+    </svg>
+  );
+}
+
+export function CameraSnapshotIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
+export function InstallAppIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <polyline points="9 10 12 13 15 10" />
+      <line x1="12" y1="6" x2="12" y2="13" />
+    </svg>
+  );
+}
+
+export function BroadcastWaveIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...props}
+    >
+      <path d="M2 12h2" />
+      <path d="M6 8v8" />
+      <path d="M10 5v14" />
+      <path d="M14 9v6" />
+      <path d="M18 7v10" />
+      <path d="M22 12h-2" />
+    </svg>
+  );
+}

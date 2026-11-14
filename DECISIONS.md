@@ -195,3 +195,50 @@
   1. Extend `CanvasSceneCompositor` with Canvas 2D path clipping (`arc` / rounded-rect path + border ring) for `pipFrameShape` (`rect` | `rounded` | `circle`) and `pipBorderStyle` (`sky` | `amber` | `emerald` | `subtle` | `none`), persisted in `StudioPreferencesStore`.
   2. Capture `RecordingChapterMarker` entries directly inside `BrowserRecordingEngine.addChapterMarker()` (`B` hotkey or live marker form) using `computeCurrentElapsedMs()`, freeze `chapterMarkers` onto `RecordedMediaArtifact` on `stop()`, and provide clickable `<video>` preview chapter chips + auto-`00:00 Intro` YouTube chapter formatting (`formatYouTubeChapters`) + local `-chapters.txt` export in `ExportPanel`.
 - **Consequences**: Broadcast-ready circular/rounded PIP styling, exact commentary-clock chapter markers across pauses, one-click preview seeking, and instant YouTube chapter copy/download with zero network activity.
+
+---
+
+## ADR-020: Live `getDisplayMedia` Screen/Tab Source Without Speaker Echo or `Infinity` Duration Traps
+- **Status**: Accepted (Task 11)
+- **Context**:
+  1. Technical educators and reviewers frequently react to a live browser tab, code editor window, or desktop screen (`navigator.mediaDevices.getDisplayMedia`) in addition to pre-recorded local video files.
+  2. Unlike local video files (`<video src="blob:...">`), a shared tab/system already plays its own audio through the OS speaker mixer — routing `getDisplayMedia` audio to `AudioContext.destination` (or leaving `<video srcObject>` unmuted) creates jarring double-monitoring echo. Furthermore, live `MediaStream`s emit `loadedmetadata` with `video.duration === Infinity`.
+- **Decision**:
+  1. Extend `HtmlVideoSourcePlayer` with `startScreenShare()` / `getScreenStream()`, binding `video.srcObject = screenStream` with `video.muted = true`, guarding `loadedmetadata` against `Infinity` duration checks when `sourceMode === 'screen'`, supporting live freeze-frame (`pause()` / `play()`) so creators can draw Telestrator annotations over a frozen window, and auto-unloading cleanly when the user clicks the browser's native `"Stop sharing"` bar (`videoTrack` `'ended'`).
+  2. Extend `BrowserAudioMixer` with `attachSourceStream(stream, label)` routing `MediaStreamAudioSourceNode -> sourceStreamGainNode -> sourceAnalyser + masterMixBus` (`0–200%` unified gain + mute + Auto-Duck) with **zero** edges to `AudioContext.destination`.
+- **Consequences**: Seamless switching between local files and live screen/tab shares with zero leaked Object URLs, zero speaker echo, full freeze-to-annotate support, and uninterrupted webcam/mic/recording lifecycles.
+
+---
+
+## ADR-021: Zero-Tick Voice Auto-Ducking & Broadcast Vocal Chain (`85Hz` HPF + `4:1` Limiter)
+- **Status**: Accepted (Task 12)
+- **Context**:
+  1. Manually riding the `Video Audio` slider whenever the creator speaks over loud video/screen audio is fatiguing during live reactions, yet React re-renders on audio frames must remain strictly zero.
+  2. Laptop and USB condenser microphones often pick up low-frequency desk rumble (`< 85 Hz`) and clip during emphatic reactions.
+- **Decision**:
+  1. Implement optional **Smart Voice Auto-Ducking** (`setAutoDuckEnabled`) directly inside `BrowserAudioMixer`'s `sampleMetersNow()` ballistics pass: when unmuted creator speech crosses `AUTO_DUCK_SPEECH_RMS_THRESHOLD` (`0.025`), `currentDuckMultiplier` smoothly attacks toward `0.28` (`~ -11 dB`) across both `sourceGainNode` and `sourceStreamGainNode`, releasing smoothly back to `1.0` when silent and exposing `isDucking` / `duckGainMultiplier` solely to leaf meter subscribers (`SourceAutoDuckBadge`).
+  2. Implement optional **Broadcast Vocal Processing** (`setMicProcessingEnabled`) inserting an `85 Hz` `BiquadFilterNode` (`highpass`, `Q = 0.707`) + `4:1` `DynamicsCompressorNode` (`threshold = -18 dB`, `knee = 12 dB`) upstream of `micGainNode`, preserving **zero** microphone-to-speaker paths.
+- **Consequences**: Hands-free broadcast ducking and cleaner, clip-resistant vocal commentary persisted across creator presets with zero React render churn.
+
+---
+
+## ADR-022: On-Canvas Lower-Third Banner (`L`) & Deterministic Instant PNG Thumbnail Snapshots
+- **Status**: Accepted (Task 13)
+- **Context**:
+  1. Creators want a clean broadcast title/topic banner (`Lower-Third`) baked directly into composed scenes and recordings without colliding with bottom-left Picture-in-Picture webcam overlays, plus a one-click way to save a `720p`/`1080p` reaction thumbnail (`PNG`).
+- **Decision**:
+  1. Render `StageLowerThirdConfig` (`enabled`, `title`, `subtitle`, toggled via button or `L` hotkey and persisted in `StudioPreferencesStore`) inside `CanvasSceneCompositor.renderLowerThirdLayer()`, automatically flipping the card to bottom-right whenever `layoutMode === 'pip'` places the webcam overlay in the bottom-left quadrant.
+  2. Add `exportCanvasPngSnapshot` (`src/utils/snapshot.ts`) capturing the live `<canvas>` via `canvas.toBlob(..., 'image/png')` and revoking its temporary `blob:` URL deterministically right after triggering `<a download>`.
+- **Consequences**: Broadcast-ready on-canvas titles and instant lossless `.png` thumbnail exports with zero leaked Object URLs.
+
+---
+
+## ADR-023: Local-First Installable Desktop PWA & Build-Generated Offline Asset Manifest
+- **Status**: Accepted (Task 14)
+- **Context**:
+  1. Because ReactStage requires zero cloud servers, creators should be able to install it as a standalone desktop/chromeless app and launch/use the full reaction studio completely offline (e.g., on flights or air-gapped machines).
+  2. Naive cache-first Service Workers risk serving stale HTML/JS across rebuilds or local preview servers (`127.0.0.1:4173`), while hardcoded asset lists break whenever Vite content-hashes JS/CSS bundles.
+- **Decision**:
+  1. Emit `offline-manifest.json` automatically during `vite build` (`reactStageOfflineManifestPlugin` in `vite.config.ts`) listing `./`, `./index.html`, `./manifest.webmanifest`, icons, and every hashed bundle asset.
+  2. Implement `public/sw.js` (`reactstage-shell-v1`) precaching `offline-manifest.json` on `install` (`skipWaiting` + `clients.claim`) and serving same-origin `GET` requests with a **Network-First with Cache Update + Offline Precache Fallback** strategy (explicitly ignoring `blob:` and media stream URLs), paired with `PwaProvider` (`beforeinstallprompt` **Install App** button + **Offline Ready** status badge).
+- **Consequences**: Always-fresh online loads, verified 100% offline reloads in Chromium E2E (`context.setOffline(true)`), standalone desktop installability, and zero unsolicited permission calls.

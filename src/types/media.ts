@@ -11,6 +11,8 @@ export type SourcePlaybackStatus =
   | 'ended'
   | 'error';
 
+export type SourceMediaMode = 'file' | 'screen';
+
 export type SourceMediaErrorCode =
   | 'EMPTY_FILE'
   | 'UNSUPPORTED_FILE_TYPE'
@@ -18,7 +20,10 @@ export type SourceMediaErrorCode =
   | 'NO_VIDEO_TRACK'
   | 'MEDIA_DECODE_ERROR'
   | 'MEDIA_LOAD_ABORTED'
-  | 'PLAYBACK_FAILED';
+  | 'PLAYBACK_FAILED'
+  | 'SCREEN_CAPTURE_UNSUPPORTED'
+  | 'SCREEN_CAPTURE_DENIED'
+  | 'SCREEN_CAPTURE_FAILED';
 
 export interface SourceMediaError {
   readonly code: SourceMediaErrorCode;
@@ -44,6 +49,7 @@ export interface SourceMediaMetadata {
  */
 export interface SourcePlaybackState {
   readonly status: SourcePlaybackStatus;
+  readonly sourceMode: SourceMediaMode;
   readonly objectUrl: string | null;
   readonly metadata: SourceMediaMetadata | null;
   readonly pendingFileName: string | null;
@@ -52,6 +58,7 @@ export interface SourcePlaybackState {
   readonly playbackRate: PlaybackSpeed;
   readonly volume: number;
   readonly muted: boolean;
+  readonly hasScreenAudioTrack: boolean;
   readonly error: SourceMediaError | null;
 }
 
@@ -92,6 +99,20 @@ export const SUPPORTED_TELESTRATOR_COLORS: readonly TelestratorColorOption[] = [
 ] as const;
 
 export const DEFAULT_TELESTRATOR_COLOR = '#ef4444';
+
+export const MAX_LOWER_THIRD_TEXT_LENGTH = 64;
+
+export interface StageLowerThirdConfig {
+  readonly enabled: boolean;
+  readonly title: string;
+  readonly subtitle: string;
+}
+
+export const DEFAULT_STAGE_LOWER_THIRD: StageLowerThirdConfig = {
+  enabled: false,
+  title: 'Live Reaction & Breakdown',
+  subtitle: 'ReactStage Studio',
+};
 
 export type SceneResolutionPreset = '720p' | '1080p';
 

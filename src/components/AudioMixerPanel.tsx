@@ -11,6 +11,7 @@ import { useAudioMixer, useAudioMixerMeters } from '../state/AudioMixerContext';
 import {
   AlertIcon,
   AudioMixerIcon,
+  BroadcastWaveIcon,
   LayoutSourceIcon,
   MicrophoneIcon,
   VolumeHighIcon,
@@ -306,6 +307,21 @@ function MicrophonePostGainMeter() {
   );
 }
 
+function SourceAutoDuckBadge() {
+  const meters = useAudioMixerMeters();
+  if (!meters.isDucking) {
+    return null;
+  }
+  return (
+    <span
+      data-testid="mixer-autoduck-active-badge"
+      className="rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-amber-200"
+    >
+      DUCKING {Math.round(meters.duckGainMultiplier * 100)}%
+    </span>
+  );
+}
+
 export function AudioMixerPanel() {
   const {
     state,
@@ -316,6 +332,8 @@ export function AudioMixerPanel() {
     setMicrophoneGain,
     toggleMicrophoneMute,
     resetMicrophoneGain,
+    toggleAutoDuck,
+    toggleMicProcessing,
   } = useAudioMixer();
 
   const statusBadge = getMixerStatusBadge(state.status);
@@ -473,7 +491,7 @@ export function AudioMixerPanel() {
                 data-testid="mixer-source-mute-button"
                 aria-label={
                   state.sourceChannel.muted
-                    ? 'Unmute video audio'
+                    ? 'Unmute video audio (Muted)'
                     : 'Mute video audio'
                 }
                 aria-pressed={state.sourceChannel.muted}
@@ -532,6 +550,26 @@ export function AudioMixerPanel() {
                 </button>
               )}
             </div>
+
+            {/* Smart Voice Auto-Ducking */}
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-2">
+              <button
+                type="button"
+                data-testid="mixer-autoduck-toggle"
+                aria-pressed={state.autoDuckEnabled}
+                onClick={toggleAutoDuck}
+                className={
+                  state.autoDuckEnabled
+                    ? 'inline-flex min-h-7 items-center gap-1.5 rounded-md bg-sky-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+                    : 'inline-flex min-h-7 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                }
+              >
+                <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Auto-Duck Video</span>
+              </button>
+
+              <SourceAutoDuckBadge />
+            </div>
           </div>
 
           <SourcePostGainMeter />
@@ -573,7 +611,7 @@ export function AudioMixerPanel() {
                 data-testid="mixer-mic-mute-button"
                 aria-label={
                   state.microphoneChannel.muted
-                    ? 'Unmute microphone in mix'
+                    ? 'Unmute microphone in mix (Muted)'
                     : 'Mute microphone in mix'
                 }
                 aria-pressed={state.microphoneChannel.muted}
@@ -630,6 +668,33 @@ export function AudioMixerPanel() {
                 >
                   100%
                 </button>
+              )}
+            </div>
+
+            {/* Broadcast Vocal Processing (85Hz Rumble Filter + Vocal Limiter) */}
+            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-2">
+              <button
+                type="button"
+                data-testid="mixer-mic-processing-toggle"
+                aria-pressed={state.micProcessingEnabled}
+                onClick={toggleMicProcessing}
+                className={
+                  state.micProcessingEnabled
+                    ? 'inline-flex min-h-7 items-center gap-1.5 rounded-md bg-emerald-400 px-2.5 py-1 text-[11px] font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                    : 'inline-flex min-h-7 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                }
+              >
+                <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Voice Clarity (HPF + Limiter)</span>
+              </button>
+
+              {state.micProcessingEnabled && (
+                <span
+                  data-testid="mixer-mic-processing-badge"
+                  className="rounded border border-emerald-400/40 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-200"
+                >
+                  85Hz · 4:1
+                </span>
               )}
             </div>
           </div>

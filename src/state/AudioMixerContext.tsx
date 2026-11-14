@@ -31,6 +31,10 @@ export interface AudioMixerContextValue {
   readonly setMicrophoneMuted: (muted: boolean) => void;
   readonly toggleMicrophoneMute: () => void;
   readonly resetMicrophoneGain: () => void;
+  readonly setAutoDuckEnabled: (enabled: boolean) => void;
+  readonly toggleAutoDuck: () => void;
+  readonly setMicProcessingEnabled: (enabled: boolean) => void;
+  readonly toggleMicProcessing: () => void;
   readonly getMixedOutputStream: () => MediaStream | null;
 }
 
@@ -64,6 +68,7 @@ export function AudioMixerProvider({
   const {
     state: playbackState,
     videoRef,
+    getScreenStream,
     setVolume,
     setMuted,
     setExternalAudioControl,
@@ -135,7 +140,7 @@ export function AudioMixerProvider({
     };
   }, [setExternalAudioControl, state.isSourceElementBound, videoRef]);
 
-  // Sync source playback lifecycle & metadata into AudioMixer without mutating playback
+  // Sync source playback lifecycle & screen-share audio stream into AudioMixer without mutating playback
   useEffect(() => {
     const hasPlayableSource =
       playbackState.status === 'ready' ||
@@ -143,22 +148,39 @@ export function AudioMixerProvider({
       playbackState.status === 'paused' ||
       playbackState.status === 'ended';
 
+    const isScreenMode =
+      playbackState.sourceMode === 'screen' && hasPlayableSource;
+    const screenStream = isScreenMode ? getScreenStream() : null;
+
     activeMixer.attachSourceElement(videoRef.current);
+    activeMixer.attachSourceStream?.(
+      screenStream,
+      playbackState.metadata?.fileName ?? null,
+    );
+
     activeMixer.updateSourceDescriptor({
-      hasSource: hasPlayableSource && playbackState.objectUrl !== null,
+      hasSource:
+        hasPlayableSource &&
+        (playbackState.objectUrl !== null || isScreenMode),
       isPlaying: playbackState.status === 'playing',
       isPaused:
         playbackState.status === 'ready' ||
         playbackState.status === 'paused' ||
         playbackState.status === 'ended',
       label: playbackState.metadata?.fileName ?? null,
+      hasAudioTrack: isScreenMode
+        ? playbackState.hasScreenAudioTrack
+        : undefined,
     });
   }, [
     activeMixer,
-    videoRef,
-    playbackState.status,
-    playbackState.objectUrl,
+    getScreenStream,
+    playbackState.hasScreenAudioTrack,
     playbackState.metadata?.fileName,
+    playbackState.objectUrl,
+    playbackState.sourceMode,
+    playbackState.status,
+    videoRef,
   ]);
 
   // Unify PlaybackControls volume/mute with AudioMixer source channel
@@ -254,6 +276,30 @@ export function AudioMixerProvider({
     setMicrophoneGain(DEFAULT_AUDIO_GAIN);
   }, [setMicrophoneGain]);
 
+  const setAutoDuckEnabled = useCallback(
+    (enabled: boolean) => {
+      activeMixer.setAutoDuckEnabled?.(enabled);
+    },
+    [activeMixer],
+  );
+
+  const toggleAutoDuck = useCallback(() => {
+    const next = !activeMixer.getState().autoDuckEnabled;
+    activeMixer.setAutoDuckEnabled?.(next);
+  }, [activeMixer]);
+
+  const setMicProcessingEnabled = useCallback(
+    (enabled: boolean) => {
+      activeMixer.setMicProcessingEnabled?.(enabled);
+    },
+    [activeMixer],
+  );
+
+  const toggleMicProcessing = useCallback(() => {
+    const next = !activeMixer.getState().micProcessingEnabled;
+    activeMixer.setMicProcessingEnabled?.(next);
+  }, [activeMixer]);
+
   const getMixedOutputStream = useCallback(
     () => activeMixer.getMixedOutputStream(),
     [activeMixer],
@@ -271,20 +317,28 @@ export function AudioMixerProvider({
       setMicrophoneMuted,
       toggleMicrophoneMute,
       resetMicrophoneGain,
+      setAutoDuckEnabled,
+      toggleAutoDuck,
+      setMicProcessingEnabled,
+      toggleMicProcessing,
       getMixedOutputStream,
     }),
     [
-      state,
       enableAudio,
-      setSourceGain,
-      setSourceMuted,
-      toggleSourceMute,
+      getMixedOutputStream,
+      resetMicrophoneGain,
       resetSourceGain,
+      setAutoDuckEnabled,
+      setMicProcessingEnabled,
       setMicrophoneGain,
       setMicrophoneMuted,
+      setSourceGain,
+      setSourceMuted,
+      state,
+      toggleAutoDuck,
+      toggleMicProcessing,
       toggleMicrophoneMute,
-      resetMicrophoneGain,
-      getMixedOutputStream,
+      toggleSourceMute,
     ],
   );
 

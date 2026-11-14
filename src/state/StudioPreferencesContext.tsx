@@ -56,6 +56,8 @@ export function StudioPreferencesProvider({
     setSourceMuted,
     setMicrophoneGain,
     setMicrophoneMuted,
+    setAutoDuckEnabled,
+    setMicProcessingEnabled,
   } = useAudioMixer();
   const {
     state: compositorState,
@@ -65,6 +67,7 @@ export function StudioPreferencesProvider({
     setPipFrameShape,
     setPipBorderStyle,
     setSplitRatio,
+    setLowerThird,
   } = useSceneCompositor();
   const { preRollEnabled, setPreRollEnabled } = useRecordingSession();
   const { shortcutsEnabled, setShortcutsEnabled } = useStudioShortcuts();
@@ -105,12 +108,22 @@ export function StudioPreferencesProvider({
       setSourceMuted(profile.sourceMuted);
       setMicrophoneGain(profile.microphoneGain);
       setMicrophoneMuted(profile.microphoneMuted);
+      setAutoDuckEnabled(profile.autoDuckEnabled);
+      setMicProcessingEnabled(profile.micProcessingEnabled);
+      setLowerThird({
+        enabled: profile.lowerThirdEnabled,
+        title: profile.lowerThirdTitle,
+        subtitle: profile.lowerThirdSubtitle,
+      });
       setMirrorPreview(profile.mirrorPreview);
       setPreRollEnabled(profile.preRollEnabled);
       setShortcutsEnabled(profile.shortcutsEnabled);
     },
     [
+      setAutoDuckEnabled,
       setLayoutMode,
+      setLowerThird,
+      setMicProcessingEnabled,
       setMicrophoneGain,
       setMicrophoneMuted,
       setMirrorPreview,
@@ -138,6 +151,11 @@ export function StudioPreferencesProvider({
       sourceMuted: mixerState.sourceChannel.muted,
       microphoneGain: mixerState.microphoneChannel.gain,
       microphoneMuted: mixerState.microphoneChannel.muted,
+      autoDuckEnabled: mixerState.autoDuckEnabled,
+      micProcessingEnabled: mixerState.micProcessingEnabled,
+      lowerThirdEnabled: compositorState.lowerThird.enabled,
+      lowerThirdTitle: compositorState.lowerThird.title,
+      lowerThirdSubtitle: compositorState.lowerThird.subtitle,
       mirrorPreview: captureSnapshot.mirrorPreview,
       preRollEnabled,
       shortcutsEnabled,
@@ -145,11 +163,16 @@ export function StudioPreferencesProvider({
     [
       captureSnapshot.mirrorPreview,
       compositorState.layoutMode,
+      compositorState.lowerThird.enabled,
+      compositorState.lowerThird.subtitle,
+      compositorState.lowerThird.title,
       compositorState.pipBorderStyle,
       compositorState.pipFrameShape,
       compositorState.pipRect,
       compositorState.resolutionPreset,
       compositorState.splitRatio,
+      mixerState.autoDuckEnabled,
+      mixerState.micProcessingEnabled,
       mixerState.microphoneChannel.gain,
       mixerState.microphoneChannel.muted,
       mixerState.sourceChannel.gain,

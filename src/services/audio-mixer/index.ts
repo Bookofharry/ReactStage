@@ -1,4 +1,6 @@
 export {
+  AUTO_DUCK_SPEECH_RMS_THRESHOLD,
+  AUTO_DUCK_TARGET_MULTIPLIER,
   BrowserAudioMixer,
   IDLE_AUDIO_METER_SNAPSHOT,
   computeMixerLevelPercent,
@@ -10,7 +12,9 @@ export type {
   MixerAudioContextFactory,
   MixerAudioContextLike,
   MixerAudioParamLike,
+  MixerBiquadFilterNodeLike,
   MixerConnectableNodeLike,
+  MixerDynamicsCompressorNodeLike,
   MixerGainNodeLike,
   MixerMediaElementSourceNodeLike,
   MixerMediaStreamDestinationNodeLike,

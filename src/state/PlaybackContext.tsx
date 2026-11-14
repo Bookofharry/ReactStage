@@ -18,6 +18,8 @@ export interface SourcePlaybackContextValue {
   readonly state: SourcePlaybackState;
   readonly videoRef: RefObject<HTMLVideoElement | null>;
   readonly loadFile: (file: File) => void;
+  readonly startScreenShare: () => Promise<void>;
+  readonly getScreenStream: () => MediaStream | null;
   readonly unload: () => void;
   readonly play: () => Promise<void>;
   readonly pause: () => void;
@@ -32,7 +34,9 @@ export interface SourcePlaybackContextValue {
   readonly setExternalAudioControl: (enabled: boolean) => void;
 }
 
-const SourcePlaybackContext = createContext<SourcePlaybackContextValue | null>(null);
+const SourcePlaybackContext = createContext<SourcePlaybackContextValue | null>(
+  null,
+);
 
 export interface SourcePlaybackProviderProps {
   readonly children: ReactNode;
@@ -43,7 +47,9 @@ export function SourcePlaybackProvider({
   children,
   player: externalPlayer,
 }: SourcePlaybackProviderProps) {
-  const [internalPlayer] = useState<SourcePlayer>(() => new HtmlVideoSourcePlayer());
+  const [internalPlayer] = useState<SourcePlayer>(
+    () => new HtmlVideoSourcePlayer(),
+  );
   const activePlayer = externalPlayer ?? internalPlayer;
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -51,7 +57,10 @@ export function SourcePlaybackProvider({
     (listener: () => void) => activePlayer.subscribe(listener),
     [activePlayer],
   );
-  const getSnapshot = useCallback(() => activePlayer.getState(), [activePlayer]);
+  const getSnapshot = useCallback(
+    () => activePlayer.getState(),
+    [activePlayer],
+  );
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
@@ -69,6 +78,16 @@ export function SourcePlaybackProvider({
     },
     [activePlayer],
   );
+
+  const startScreenShare = useCallback(async () => {
+    if (activePlayer.startScreenShare) {
+      await activePlayer.startScreenShare();
+    }
+  }, [activePlayer]);
+
+  const getScreenStream = useCallback((): MediaStream | null => {
+    return activePlayer.getScreenStream?.() ?? null;
+  }, [activePlayer]);
 
   const unload = useCallback(() => {
     activePlayer.unload();
@@ -101,7 +120,10 @@ export function SourcePlaybackProvider({
     (muted: boolean) => activePlayer.setMuted(muted),
     [activePlayer],
   );
-  const toggleMute = useCallback(() => activePlayer.toggleMute(), [activePlayer]);
+  const toggleMute = useCallback(
+    () => activePlayer.toggleMute(),
+    [activePlayer],
+  );
   const setExternalAudioControl = useCallback(
     (enabled: boolean) => {
       activePlayer.setExternalAudioControl?.(enabled);
@@ -114,6 +136,8 @@ export function SourcePlaybackProvider({
       state,
       videoRef,
       loadFile,
+      startScreenShare,
+      getScreenStream,
       unload,
       play,
       pause,
@@ -128,20 +152,22 @@ export function SourcePlaybackProvider({
       setExternalAudioControl,
     }),
     [
-      state,
+      getScreenStream,
       loadFile,
-      unload,
-      play,
       pause,
-      togglePlayPause,
-      seek,
-      rewind,
+      play,
       restart,
+      rewind,
+      seek,
+      setExternalAudioControl,
+      setMuted,
       setPlaybackRate,
       setVolume,
-      setMuted,
+      startScreenShare,
+      state,
       toggleMute,
-      setExternalAudioControl,
+      togglePlayPause,
+      unload,
     ],
   );
 
@@ -156,7 +182,9 @@ export function SourcePlaybackProvider({
 export function useSourcePlayback(): SourcePlaybackContextValue {
   const ctx = useContext(SourcePlaybackContext);
   if (!ctx) {
-    throw new Error('useSourcePlayback must be used within a SourcePlaybackProvider');
+    throw new Error(
+      'useSourcePlayback must be used within a SourcePlaybackProvider',
+    );
   }
   return ctx;
 }
