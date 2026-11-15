@@ -456,6 +456,7 @@ test.describe('ReactStage — Task 4 Live Audio Mixer E2E', () => {
     expect((await sampleSpectrum(page))?.streamId).toBe(initialStreamId);
 
     // 5. Independent Source Mute & Mic Mute
+    await page.getByTestId('workspace-tab-audio').click();
     await page.getByTestId('mixer-source-mute-button').click();
     await expect(page.getByTestId('mixer-mode-badge')).toHaveText('Mic Only');
     await expect(page.getByTestId('volume-display')).toHaveText('Muted');
@@ -566,6 +567,7 @@ test.describe('ReactStage — Task 4 Live Audio Mixer E2E', () => {
     await expect(page.getByTestId('microphone-status-badge')).toHaveText(
       'Live',
     );
+    await page.getByTestId('workspace-tab-audio').click();
 
     const micSlider = page.getByTestId('mixer-mic-gain-slider');
     await micSlider.focus();

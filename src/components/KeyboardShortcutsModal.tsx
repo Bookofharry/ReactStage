@@ -147,9 +147,9 @@ export function KeyboardShortcutsModal() {
         aria-modal="true"
         aria-labelledby="shortcuts-modal-title"
         data-testid="keyboard-shortcuts-modal"
-        className="relative z-10 flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl"
+        className="relative z-10 flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 text-slate-100 shadow-2xl backdrop-blur-xl"
       >
-        <div className="flex items-start justify-between gap-2.5 border-b border-slate-800 px-3.5 py-3 sm:items-center sm:px-5 sm:py-3.5">
+        <div className="flex items-start justify-between gap-2.5 border-b border-white/[0.08] px-3.5 py-3 sm:items-center sm:px-5 sm:py-3.5">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-sky-400/30 bg-sky-400/10 text-sky-300">
               <KeyboardIcon className="h-4 w-4" />

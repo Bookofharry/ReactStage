@@ -264,6 +264,7 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     // Start camera and test PIP keyboard + pointer controls
     await page.getByTestId('camera-toggle-button').click();
     await page.getByTestId('layout-mode-pip').click();
+    await page.getByTestId('toggle-layout-customize-button').click();
 
     await page.getByTestId('pip-corner-top-left').click();
     await expect(page.getByTestId('pip-metrics-readout')).toContainText(

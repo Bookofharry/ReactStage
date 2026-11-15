@@ -95,6 +95,7 @@ test.describe('ReactStage — Tasks 16–19 Vertical Shorts, IndexedDB Vault, Te
     await expect(page.getByTestId('export-panel')).toContainText('720×1280');
 
     // 4. Trim clip In point and export companion 16-bit PCM RIFF/WAVE (.wav)
+    await page.getByTestId('toggle-trim-tools-button').click();
     await page.getByTestId('trim-start-input').fill('0.1');
     await expect(
       page.getByTestId('download-trimmed-video-button'),

@@ -7,6 +7,7 @@ test.describe('ReactStage — Tasks 9 & 10 Stage Telestrator, PIP Framing & Chap
     page,
   }) => {
     await page.goto('./');
+    await page.getByTestId('toggle-draw-tools-button').click();
     await expect(page.getByTestId('telestrator-toolbar')).toBeVisible();
 
     // 1. Select Coral Red Arrow tool and draw across the center of the composed <canvas>
@@ -60,6 +61,7 @@ test.describe('ReactStage — Tasks 9 & 10 Stage Telestrator, PIP Framing & Chap
 
     // Switch back to Cursor tool, set Circle PIP + Gold Border
     await page.getByTestId('telestrator-tool-none').click();
+    await page.getByTestId('toggle-layout-customize-button').click();
     await page.getByTestId('pip-shape-circle').click();
     await page.getByTestId('pip-border-select').selectOption('amber');
 

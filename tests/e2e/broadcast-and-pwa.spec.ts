@@ -96,6 +96,7 @@ test.describe('ReactStage — Tasks 11–14 Broadcast Suite & Offline PWA E2E', 
       .fill('System Design Deep Dive');
 
     // 3. Toggle Auto-Duck Video & Voice Clarity on Live Audio Mixer
+    await page.getByTestId('workspace-tab-audio').click();
     await page.getByTestId('mixer-autoduck-toggle').click();
     await page.getByTestId('mixer-mic-processing-toggle').click();
     await expect(page.getByTestId('mixer-autoduck-toggle')).toHaveAttribute(
@@ -193,6 +194,7 @@ test.describe('ReactStage — Tasks 11–14 Broadcast Suite & Offline PWA E2E', 
     try {
       await page.reload();
       await expect(page.getByTestId('scene-stage-panel')).toBeVisible();
+      await page.getByTestId('workspace-tab-audio').click();
       await expect(page.getByTestId('audio-mixer-panel')).toBeVisible();
       await expect(page.getByTestId('header-offline-badge')).toBeVisible();
     } finally {

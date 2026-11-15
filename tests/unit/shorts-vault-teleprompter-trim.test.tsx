@@ -384,9 +384,14 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
       );
 
       // Hydrates both takes from TakeVault with <= 1 preview Object URL
-      await waitFor(() => {
-        expect(screen.getByTestId('session-takes-count')).toHaveTextContent('2');
-      });
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('session-takes-count')).toHaveTextContent(
+            '2',
+          );
+        },
+        { timeout: 4000 },
+      );
       expect(screen.getByTestId('vault-status-badge')).toHaveTextContent(
         'Vault Saved',
       );
@@ -395,6 +400,7 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
       // Switch between Take #1 and Take #2 -> still strictly 1 Object URL
       await user.click(screen.getByTestId('select-take-button-1'));
       expect(exportManager.getState().activeObjectUrlCount).toBe(1);
+      await user.click(screen.getByTestId('toggle-trim-tools-button'));
       expect(screen.getByTestId('trim-range-summary')).toHaveTextContent(
         'Full Clip',
       );
@@ -427,6 +433,7 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
         'aria-pressed',
         'true',
       );
+      await user.click(screen.getByTestId('toggle-layout-customize-button'));
       expect(screen.getByTestId('split-ratio-readout')).toHaveTextContent(
         '50% Top Source / 50% Bottom Webcam',
       );
@@ -451,10 +458,13 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
 
       // Delete Take #1 -> verify Vault removes it
       await user.click(screen.getByTestId('delete-take-button-1'));
-      await waitFor(async () => {
-        const remaining = await vault.loadAll();
-        expect(remaining.map((r) => r.id)).toEqual(['vault-take-2']);
-      });
+      await waitFor(
+        async () => {
+          const remaining = await vault.loadAll();
+          expect(remaining.map((r) => r.id)).toEqual(['vault-take-2']);
+        },
+        { timeout: 4000 },
+      );
 
       // Unmount and remount -> Teleprompter script + 720p-vertical + Top/Bottom persist via StudioPreferencesStore!
       firstMount.unmount();

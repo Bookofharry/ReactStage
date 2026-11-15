@@ -25,7 +25,7 @@ function TransportRecordingTimeBadge() {
   return (
     <span
       data-testid="transport-recording-time"
-      className="rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-amber-300 tabular-nums"
+      className="rounded-md border border-white/[0.08] bg-slate-950/85 px-2 py-0.5 font-mono text-xs text-amber-300 tabular-nums"
     >
       {formatTimecode(telemetry.elapsedRecordingMs / 1000, true)}
     </span>
@@ -90,27 +90,18 @@ export function PlaybackControls() {
     <section
       data-testid="source-playback-controls"
       aria-labelledby="playback-controls-heading"
-      className="min-w-0 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
+      className="min-w-0 rounded-2xl border border-white/[0.08] bg-slate-900/75 px-3 py-2.5 shadow-xl shadow-black/30 backdrop-blur-md min-[375px]:px-3.5 sm:px-4 sm:py-3"
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-800 pb-2.5 sm:gap-2">
-        <h2
-          id="playback-controls-heading"
-          className="text-sm font-semibold text-slate-100"
-        >
-          Source Video Transport
-        </h2>
-        <span className="text-[11px] leading-snug text-slate-300">
-          Pausing or seeking holds the source frame while webcam &amp; mic mix
-          stay live
-        </span>
-      </div>
+      <h2 id="playback-controls-heading" className="sr-only">
+        Source Video Transport
+      </h2>
 
-      <div className="flex flex-col gap-3.5">
-        {/* Scrubber & Dual Clock Comparison */}
+      <div className="flex flex-col gap-2.5">
+        {/* Scrubber & Independent Video vs. Recording Clocks */}
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="font-semibold text-sky-300">Source Playback</span>
+              <span className="font-semibold text-sky-300">Video Player</span>
               <span
                 data-testid="source-playback-time"
                 className="font-mono font-semibold text-slate-100 tabular-nums"
@@ -124,7 +115,7 @@ export function PlaybackControls() {
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 text-slate-300">
-              <span>Recording Time:</span>
+              <span>Rec</span>
               <TransportRecordingTimeBadge />
             </div>
           </div>
@@ -151,9 +142,9 @@ export function PlaybackControls() {
           />
         </div>
 
-        {/* Transport Buttons, Playback Speed, and Unified Source Gain/Mute */}
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-          <div className="grid grid-cols-2 gap-2 min-[420px]:flex min-[420px]:flex-wrap min-[420px]:items-center">
+        {/* Transport Buttons, Speed & Video Volume */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="grid grid-cols-2 gap-1.5 min-[420px]:flex min-[420px]:flex-wrap min-[420px]:items-center">
             <button
               type="button"
               data-testid="play-pause-button"
@@ -168,7 +159,7 @@ export function PlaybackControls() {
                     : 'Play source video'
               }
               onClick={handlePlayPauseClick}
-              className="col-span-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400 min-[420px]:col-span-1"
+              className="col-span-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 shadow-xs hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400 min-[420px]:col-span-1"
             >
               {isPlaying ? (
                 <>
@@ -187,12 +178,12 @@ export function PlaybackControls() {
               type="button"
               data-testid="rewind-button"
               disabled={!canScrubTimeline}
-              aria-label="Rewind 10s"
+              aria-label="Rewind -10s"
               onClick={() => rewind(10)}
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RewindIcon className="h-4 w-4" />
-              <span>Rewind 10s</span>
+              <RewindIcon className="h-3.5 w-3.5" />
+              <span>-10s</span>
             </button>
 
             <button
@@ -201,16 +192,16 @@ export function PlaybackControls() {
               disabled={!canScrubTimeline}
               aria-label="Restart source video from beginning"
               onClick={restart}
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RestartIcon className="h-4 w-4" />
+              <RestartIcon className="h-3.5 w-3.5" />
               <span>Restart</span>
             </button>
           </div>
 
-          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             {/* Speed Selector */}
-            <div className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5">
+            <div className="flex min-h-10 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-950/85 px-2.5 py-1">
               <label
                 htmlFor="playback-speed-select"
                 className="text-xs font-medium text-slate-300"
@@ -223,7 +214,7 @@ export function PlaybackControls() {
                 disabled={isScreenMode}
                 value={state.playbackRate}
                 onChange={handleSpeedChange}
-                className="min-h-8 rounded bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-8 rounded bg-slate-900 px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {SUPPORTED_PLAYBACK_SPEEDS.map((speed) => (
                   <option key={speed} value={speed}>
@@ -233,8 +224,8 @@ export function PlaybackControls() {
               </select>
             </div>
 
-            {/* Unified Video Audio Gain & Mute */}
-            <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 sm:flex-initial">
+            {/* Video Volume & Mute */}
+            <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-white/[0.08] bg-slate-950/85 px-2.5 py-1 sm:flex-initial">
               <button
                 type="button"
                 data-testid="mute-toggle-button"
@@ -243,7 +234,7 @@ export function PlaybackControls() {
                 }
                 aria-pressed={sourceMuted}
                 onClick={toggleSourceMute}
-                className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md text-slate-100 transition hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                className="inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center rounded-lg text-slate-100 transition hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               >
                 {sourceMuted || sourceGain === 0 ? (
                   <VolumeMutedIcon className="h-4 w-4 text-rose-300" />
@@ -269,12 +260,12 @@ export function PlaybackControls() {
                     : `${effectiveVolumePercent} percent`
                 }
                 onChange={handleVolumeChange}
-                className="min-w-[4.5rem] flex-1 cursor-pointer rounded-lg bg-slate-800 sm:w-28 sm:flex-initial"
+                className="min-w-[4.5rem] flex-1 cursor-pointer rounded-lg bg-slate-800 sm:w-24 sm:flex-initial"
               />
 
               <span
                 data-testid="volume-display"
-                className="min-w-[3.1rem] shrink-0 text-right font-mono text-xs font-medium text-slate-100 tabular-nums"
+                className="min-w-[3rem] shrink-0 text-right font-mono text-xs font-medium text-slate-100 tabular-nums"
               >
                 {sourceMuted ? 'Muted' : `${effectiveVolumePercent}%`}
               </span>

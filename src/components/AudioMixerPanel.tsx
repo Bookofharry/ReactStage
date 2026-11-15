@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import {
   MAX_AUDIO_GAIN,
   MIN_AUDIO_GAIN,
@@ -12,6 +12,7 @@ import {
   AlertIcon,
   AudioMixerIcon,
   BroadcastWaveIcon,
+  ChevronDownIcon,
   LayoutSourceIcon,
   MicrophoneIcon,
   VolumeHighIcon,
@@ -36,7 +37,7 @@ function getMixerStatusBadge(status: AudioMixerStatus): {
     case 'unavailable':
       return {
         label: 'Web Audio Unavailable',
-        classes: 'border-slate-700 bg-slate-800 text-slate-300',
+        classes: 'border-white/10 bg-slate-800 text-slate-300',
       };
     case 'error':
       return {
@@ -47,7 +48,7 @@ function getMixerStatusBadge(status: AudioMixerStatus): {
     default:
       return {
         label: 'Standby',
-        classes: 'border-slate-700 bg-slate-800 text-slate-300',
+        classes: 'border-white/10 bg-slate-800 text-slate-300',
       };
   }
 }
@@ -76,7 +77,7 @@ function getMixModeBadge(mode: AudioMixMode): {
     default:
       return {
         label: 'Silent Mix',
-        classes: 'border-slate-700 bg-slate-800 text-slate-300',
+        classes: 'border-white/10 bg-slate-800 text-slate-300',
       };
   }
 }
@@ -110,7 +111,7 @@ function getSourceAvailabilityMeta(availability: SourceAudioAvailability): {
     default:
       return {
         badgeText: 'No Video',
-        badgeClass: 'border-slate-700 bg-slate-800 text-slate-300',
+        badgeClass: 'border-white/10 bg-slate-800 text-slate-300',
       };
   }
 }
@@ -141,7 +142,7 @@ function getMicrophoneAvailabilityMeta(
     default:
       return {
         badgeText: 'Mic Off',
-        badgeClass: 'border-slate-700 bg-slate-800 text-slate-300',
+        badgeClass: 'border-white/10 bg-slate-800 text-slate-300',
       };
   }
 }
@@ -163,13 +164,13 @@ function MasterOutputMeterReadout() {
     meters.clipping,
   );
   const valueText = meters.clipping
-    ? `${meters.masterLevelPercent} percent (clipping)`
-    : `${meters.masterLevelPercent} percent`;
+    ? `${String(meters.masterLevelPercent)} percent (clipping)`
+    : `${String(meters.masterLevelPercent)} percent`;
 
   return (
-    <div className="flex w-full items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 sm:w-auto">
+    <div className="flex w-full items-center gap-2 rounded-xl border border-white/[0.06] bg-slate-900/80 px-2.5 py-1.5">
       <span className="shrink-0 text-[11px] font-medium text-slate-300">
-        Mix Bus
+        Mix Output
       </span>
       <div
         role="meter"
@@ -179,11 +180,11 @@ function MasterOutputMeterReadout() {
         aria-valuenow={meters.masterLevelPercent}
         aria-valuetext={valueText}
         data-testid="mixer-master-meter"
-        className="h-2 min-w-[4rem] flex-1 overflow-hidden rounded-full bg-slate-800 sm:w-24 sm:flex-initial"
+        className="h-2 min-w-[4rem] flex-1 overflow-hidden rounded-full bg-slate-800"
       >
         <div
           data-testid="mixer-master-meter-fill"
-          style={{ width: `${meters.masterLevelPercent}%` }}
+          style={{ width: `${String(meters.masterLevelPercent)}%` }}
           className={`h-full rounded-full ${fillClass}`}
         />
       </div>
@@ -212,13 +213,13 @@ function SourcePostGainMeter() {
     meters.sourceClipping,
   );
   const valueText = meters.sourceClipping
-    ? `${meters.sourceLevelPercent} percent (clipping)`
-    : `${meters.sourceLevelPercent} percent`;
+    ? `${String(meters.sourceLevelPercent)} percent (clipping)`
+    : `${String(meters.sourceLevelPercent)} percent`;
 
   return (
-    <div className="mt-2.5">
+    <div className="mt-2.5 border-t border-white/[0.06] pt-2">
       <div className="flex items-center justify-between gap-2 text-[11px]">
-        <span className="text-slate-300">Post-Gain Level</span>
+        <span className="text-slate-300">Video Level</span>
         <div className="flex items-center gap-1.5">
           {meters.sourceClipping && (
             <span
@@ -249,7 +250,7 @@ function SourcePostGainMeter() {
       >
         <div
           data-testid="mixer-source-meter-fill"
-          style={{ width: `${meters.sourceLevelPercent}%` }}
+          style={{ width: `${String(meters.sourceLevelPercent)}%` }}
           className={`h-full rounded-full ${fillClass}`}
         />
       </div>
@@ -264,13 +265,13 @@ function MicrophonePostGainMeter() {
     meters.microphoneClipping,
   );
   const valueText = meters.microphoneClipping
-    ? `${meters.microphoneLevelPercent} percent (clipping)`
-    : `${meters.microphoneLevelPercent} percent`;
+    ? `${String(meters.microphoneLevelPercent)} percent (clipping)`
+    : `${String(meters.microphoneLevelPercent)} percent`;
 
   return (
-    <div className="mt-2.5">
+    <div className="mt-2.5 border-t border-white/[0.06] pt-2">
       <div className="flex items-center justify-between gap-2 text-[11px]">
-        <span className="text-slate-300">Post-Gain Level</span>
+        <span className="text-slate-300">Mic Level</span>
         <div className="flex items-center gap-1.5">
           {meters.microphoneClipping && (
             <span
@@ -301,7 +302,7 @@ function MicrophonePostGainMeter() {
       >
         <div
           data-testid="mixer-mic-meter-fill"
-          style={{ width: `${meters.microphoneLevelPercent}%` }}
+          style={{ width: `${String(meters.microphoneLevelPercent)}%` }}
           className={`h-full rounded-full ${fillClass}`}
         />
       </div>
@@ -317,7 +318,7 @@ function SourceAutoDuckBadge() {
   return (
     <span
       data-testid="mixer-autoduck-active-badge"
-      className="rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-amber-200"
+      className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-amber-200"
     >
       DUCKING {Math.round(meters.duckGainMultiplier * 100)}%
     </span>
@@ -327,7 +328,6 @@ function SourceAutoDuckBadge() {
 export function AudioMixerPanel() {
   const {
     state,
-    enableAudio,
     setSourceGain,
     toggleSourceMute,
     resetSourceGain,
@@ -337,6 +337,7 @@ export function AudioMixerPanel() {
     toggleAutoDuck,
     toggleMicProcessing,
   } = useAudioMixer();
+  const [showChannelMeters, setShowChannelMeters] = useState(false);
 
   const statusBadge = getMixerStatusBadge(state.status);
   const modeBadge = getMixModeBadge(state.mixMode);
@@ -363,82 +364,61 @@ export function AudioMixerPanel() {
     <section
       data-testid="audio-mixer-panel"
       aria-labelledby="audio-mixer-heading"
-      className="min-w-0 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
+      className="min-w-0 rounded-xl border border-white/[0.07] bg-slate-950/65 p-3"
     >
       {/* Header & Combined Output State */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
-          <AudioMixerIcon className="h-4 w-4 text-sky-300" />
-          <h2
-            id="audio-mixer-heading"
-            className="text-sm font-semibold text-slate-100"
-          >
-            Live Audio Mixer
-          </h2>
-          <span
-            data-testid="mixer-mode-badge"
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${modeBadge.classes}`}
-          >
-            {modeBadge.label}
-          </span>
-          <span
-            data-testid="mixer-status-badge"
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${statusBadge.classes}`}
-          >
-            {state.status === 'running' && (
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full bg-emerald-400"
-              />
-            )}
-            {statusBadge.label}
-          </span>
-          {state.hasMixedOutput && (
-            <span
-              data-testid="mixer-output-tracks-badge"
-              className="rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono text-[11px] text-slate-300"
+      <div className="flex flex-col gap-2.5 border-b border-white/[0.07] pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <AudioMixerIcon className="h-4 w-4 text-sky-300" />
+            <h2
+              id="audio-mixer-heading"
+              className="text-sm font-semibold text-white"
             >
-              {state.outputTrackCount}{' '}
-              {state.outputTrackCount === 1 ? 'Mix Track' : 'Mix Tracks'}
+              Audio Mix &amp; Voice
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              data-testid="mixer-mode-badge"
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${modeBadge.classes}`}
+            >
+              {modeBadge.label}
             </span>
-          )}
+            <span
+              data-testid="mixer-status-badge"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium ${statusBadge.classes}`}
+            >
+              {state.status === 'running' && (
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                />
+              )}
+              {statusBadge.label}
+            </span>
+            {state.hasMixedOutput && (
+              <span
+                data-testid="mixer-output-tracks-badge"
+                className="sr-only"
+              >
+                {state.outputTrackCount}{' '}
+                {state.outputTrackCount === 1 ? 'Mix Track' : 'Mix Tracks'}
+              </span>
+            )}
+          </div>
         </div>
 
         <MasterOutputMeterReadout />
       </div>
-
-      {/* Explicit User-Gesture Enable Audio Banner when Browser Autoplay Suspends Context */}
-      {state.requiresUserGesture && (
-        <div
-          data-testid="mixer-gesture-banner"
-          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/40 bg-amber-950/60 px-3 py-2.5 text-xs text-amber-100 sm:px-3.5"
-        >
-          <p className="min-w-0 leading-relaxed">
-            Browser audio policy paused the live audio mixer. Click{' '}
-            <strong className="font-semibold text-amber-200">
-              Enable Audio
-            </strong>{' '}
-            to activate real-time mixing and source monitoring.
-          </p>
-          <button
-            type="button"
-            data-testid="enable-audio-button"
-            onClick={() => {
-              void enableAudio();
-            }}
-            className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-amber-300 px-3.5 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-200 active:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-          >
-            Enable Audio
-          </button>
-        </div>
-      )}
 
       {/* Runtime Audio Mixer Error Alert */}
       {runtimeError && (
         <div
           role="alert"
           data-testid="mixer-error-alert"
-          className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
         >
           <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
           <div className="min-w-0">
@@ -455,260 +435,289 @@ export function AudioMixerPanel() {
         </div>
       )}
 
-      {/* Two Distinct Channels: Video Audio + Microphone */}
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+      {/* Smart Creator Audio Enhancements Up Front */}
+      <div className="mt-3 flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="text-xs font-semibold text-white">
+                Auto-Duck Video
+              </p>
+              <SourceAutoDuckBadge />
+            </div>
+            <p className="mt-0.5 text-[11px] leading-snug text-slate-300">
+              Lowers video volume automatically while you speak
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="mixer-autoduck-toggle"
+            aria-pressed={state.autoDuckEnabled}
+            onClick={toggleAutoDuck}
+            className={
+              state.autoDuckEnabled
+                ? 'inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+                : 'inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+            }
+          >
+            <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>{state.autoDuckEnabled ? 'On' : 'Turn On'}</span>
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="text-xs font-semibold text-white">Voice Clarity</p>
+              {state.micProcessingEnabled && (
+                <span
+                  data-testid="mixer-mic-processing-badge"
+                  className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-200"
+                >
+                  Active
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-[11px] leading-snug text-slate-300">
+              Cuts background rumble &amp; balances loud peaks
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="mixer-mic-processing-toggle"
+            aria-pressed={state.micProcessingEnabled}
+            onClick={toggleMicProcessing}
+            className={
+              state.micProcessingEnabled
+                ? 'inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                : 'inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+            }
+          >
+            <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>{state.micProcessingEnabled ? 'On' : 'Turn On'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Stacked Channel Volume Sliders */}
+      <div className="mt-3 flex flex-col gap-2.5">
         {/* Channel 1: Video Audio */}
         <div
           data-testid="mixer-source-channel"
-          className="flex min-w-0 flex-col justify-between rounded-lg border border-slate-800 bg-slate-950 p-3"
+          className="flex min-w-0 flex-col rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5"
         >
-          <div>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-100">
-                  <LayoutSourceIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-                  <span>Video Audio</span>
-                </div>
-                <p
-                  data-testid="mixer-source-name"
-                  className="mt-0.5 text-[11px] leading-snug text-slate-300 break-words"
-                  title={state.sourceLabel ?? 'No local video imported'}
-                >
-                  {state.sourceLabel ?? 'No local video imported'}
-                </p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                <LayoutSourceIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                <span>Video Volume</span>
               </div>
-
-              <span
-                data-testid="mixer-source-availability"
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${sourceAvail.badgeClass}`}
+              <p
+                data-testid="mixer-source-name"
+                className="mt-0.5 text-[11px] leading-snug text-slate-300 break-words"
+                title={state.sourceLabel ?? 'No video loaded yet'}
               >
-                {sourceAvail.badgeText}
-              </span>
+                {state.sourceLabel ?? 'No video loaded yet'}
+              </p>
             </div>
 
-            {/* Gain (0–200%) + Mute */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                data-testid="mixer-source-mute-button"
-                aria-label={
-                  state.sourceChannel.muted
-                    ? 'Unmute video audio (Muted)'
-                    : 'Mute video audio'
-                }
-                aria-pressed={state.sourceChannel.muted}
-                onClick={toggleSourceMute}
-                className={
-                  state.sourceChannel.muted
-                    ? 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-rose-400/50 bg-rose-950/75 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                    : 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                }
-              >
-                {state.sourceChannel.muted ||
-                state.sourceChannel.gain === 0 ? (
-                  <VolumeMutedIcon className="h-3.5 w-3.5 text-rose-300" />
-                ) : (
-                  <VolumeHighIcon className="h-3.5 w-3.5 text-sky-300" />
-                )}
-                <span>{state.sourceChannel.muted ? 'Muted' : 'Mute'}</span>
-              </button>
-
-              <label htmlFor="mixer-source-gain-slider" className="sr-only">
-                Video audio gain
-              </label>
-              <input
-                id="mixer-source-gain-slider"
-                data-testid="mixer-source-gain-slider"
-                type="range"
-                min={MIN_AUDIO_GAIN}
-                max={MAX_AUDIO_GAIN}
-                step={0.01}
-                value={state.sourceChannel.gain}
-                aria-valuetext={
-                  state.sourceChannel.muted
-                    ? `Muted (${sourceGainPercent} percent)`
-                    : `${sourceGainPercent} percent`
-                }
-                onChange={handleSourceGainChange}
-                className="min-w-[5.5rem] flex-1 cursor-pointer rounded-lg bg-slate-800"
-              />
-
-              <span
-                data-testid="mixer-source-gain-value"
-                className="min-w-[3.1rem] text-right font-mono text-xs font-semibold text-slate-100 tabular-nums"
-              >
-                {state.sourceChannel.muted ? 'Muted' : `${sourceGainPercent}%`}
-              </span>
-
-              {sourceGainPercent !== 100 && (
-                <button
-                  type="button"
-                  data-testid="mixer-source-unity-button"
-                  aria-label="Reset video audio gain to 100%"
-                  onClick={resetSourceGain}
-                  className="inline-flex min-h-8 items-center justify-center rounded border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-[10px] font-medium text-sky-300 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                >
-                  100%
-                </button>
-              )}
-            </div>
-
-            {/* Smart Voice Auto-Ducking */}
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-2">
-              <button
-                type="button"
-                data-testid="mixer-autoduck-toggle"
-                aria-pressed={state.autoDuckEnabled}
-                onClick={toggleAutoDuck}
-                className={
-                  state.autoDuckEnabled
-                    ? 'inline-flex min-h-9 items-center gap-1.5 rounded-md bg-sky-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                    : 'inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                }
-              >
-                <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Auto-Duck Video</span>
-              </button>
-
-              <SourceAutoDuckBadge />
-            </div>
+            <span
+              data-testid="mixer-source-availability"
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${sourceAvail.badgeClass}`}
+            >
+              {sourceAvail.badgeText}
+            </span>
           </div>
 
-          <SourcePostGainMeter />
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="mixer-source-mute-button"
+              aria-label={
+                state.sourceChannel.muted
+                  ? 'Unmute video audio (Muted)'
+                  : 'Mute video audio'
+              }
+              aria-pressed={state.sourceChannel.muted}
+              onClick={toggleSourceMute}
+              className={
+                state.sourceChannel.muted
+                  ? 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-rose-400/50 bg-rose-950/75 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                  : 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              }
+            >
+              {state.sourceChannel.muted || state.sourceChannel.gain === 0 ? (
+                <VolumeMutedIcon className="h-3.5 w-3.5 text-rose-300" />
+              ) : (
+                <VolumeHighIcon className="h-3.5 w-3.5 text-sky-300" />
+              )}
+              <span>{state.sourceChannel.muted ? 'Muted' : 'Mute'}</span>
+            </button>
+
+            <label htmlFor="mixer-source-gain-slider" className="sr-only">
+              Video audio gain
+            </label>
+            <input
+              id="mixer-source-gain-slider"
+              data-testid="mixer-source-gain-slider"
+              type="range"
+              min={MIN_AUDIO_GAIN}
+              max={MAX_AUDIO_GAIN}
+              step={0.01}
+              value={state.sourceChannel.gain}
+              aria-valuetext={
+                state.sourceChannel.muted
+                  ? `Muted (${String(sourceGainPercent)} percent)`
+                  : `${String(sourceGainPercent)} percent`
+              }
+              onChange={handleSourceGainChange}
+              className="min-w-[5rem] flex-1 cursor-pointer rounded-lg bg-slate-800"
+            />
+
+            <span
+              data-testid="mixer-source-gain-value"
+              className="min-w-[3rem] text-right font-mono text-xs font-semibold text-slate-100 tabular-nums"
+            >
+              {state.sourceChannel.muted
+                ? 'Muted'
+                : `${String(sourceGainPercent)}%`}
+            </span>
+
+            {sourceGainPercent !== 100 && (
+              <button
+                type="button"
+                data-testid="mixer-source-unity-button"
+                aria-label="Reset video volume to 100%"
+                onClick={resetSourceGain}
+                className="inline-flex min-h-8 items-center justify-center rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-[11px] font-medium text-sky-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
+          {showChannelMeters && <SourcePostGainMeter />}
         </div>
 
         {/* Channel 2: Microphone */}
         <div
           data-testid="mixer-mic-channel"
-          className="flex min-w-0 flex-col justify-between rounded-lg border border-slate-800 bg-slate-950 p-3"
+          className="flex min-w-0 flex-col rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5"
         >
-          <div>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-100">
-                  <MicrophoneIcon className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                  <span>Microphone</span>
-                </div>
-                <p
-                  data-testid="mixer-mic-name"
-                  className="mt-0.5 text-[11px] leading-snug text-slate-300 break-words"
-                  title={state.microphoneLabel ?? 'No active microphone'}
-                >
-                  {state.microphoneLabel ?? 'No active microphone'}
-                </p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                <MicrophoneIcon className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
+                <span>Mic Volume</span>
               </div>
-
-              <span
-                data-testid="mixer-mic-availability"
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${micAvail.badgeClass}`}
+              <p
+                data-testid="mixer-mic-name"
+                className="mt-0.5 text-[11px] leading-snug text-slate-300 break-words"
+                title={state.microphoneLabel ?? 'Microphone is off'}
               >
-                {micAvail.badgeText}
-              </span>
+                {state.microphoneLabel ?? 'Microphone is off'}
+              </p>
             </div>
 
-            {/* Gain (0–200%) + Mute */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                data-testid="mixer-mic-mute-button"
-                aria-label={
-                  state.microphoneChannel.muted
-                    ? 'Unmute microphone in mix (Muted)'
-                    : 'Mute microphone in mix'
-                }
-                aria-pressed={state.microphoneChannel.muted}
-                onClick={toggleMicrophoneMute}
-                className={
-                  state.microphoneChannel.muted
-                    ? 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-rose-400/50 bg-rose-950/75 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                    : 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                }
-              >
-                {state.microphoneChannel.muted ||
-                state.microphoneChannel.gain === 0 ? (
-                  <VolumeMutedIcon className="h-3.5 w-3.5 text-rose-300" />
-                ) : (
-                  <VolumeHighIcon className="h-3.5 w-3.5 text-emerald-300" />
-                )}
-                <span>{state.microphoneChannel.muted ? 'Muted' : 'Mute'}</span>
-              </button>
-
-              <label htmlFor="mixer-mic-gain-slider" className="sr-only">
-                Microphone mix gain
-              </label>
-              <input
-                id="mixer-mic-gain-slider"
-                data-testid="mixer-mic-gain-slider"
-                type="range"
-                min={MIN_AUDIO_GAIN}
-                max={MAX_AUDIO_GAIN}
-                step={0.01}
-                value={state.microphoneChannel.gain}
-                aria-valuetext={
-                  state.microphoneChannel.muted
-                    ? `Muted (${micGainPercent} percent)`
-                    : `${micGainPercent} percent`
-                }
-                onChange={handleMicGainChange}
-                className="min-w-[5.5rem] flex-1 cursor-pointer rounded-lg bg-slate-800"
-              />
-
-              <span
-                data-testid="mixer-mic-gain-value"
-                className="min-w-[3.1rem] text-right font-mono text-xs font-semibold text-slate-100 tabular-nums"
-              >
-                {state.microphoneChannel.muted ? 'Muted' : `${micGainPercent}%`}
-              </span>
-
-              {micGainPercent !== 100 && (
-                <button
-                  type="button"
-                  data-testid="mixer-mic-unity-button"
-                  aria-label="Reset microphone gain to 100%"
-                  onClick={resetMicrophoneGain}
-                  className="inline-flex min-h-8 items-center justify-center rounded border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-[10px] font-medium text-sky-300 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-                >
-                  100%
-                </button>
-              )}
-            </div>
-
-            {/* Broadcast Vocal Processing (85Hz Rumble Filter + Vocal Limiter) */}
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-2">
-              <button
-                type="button"
-                data-testid="mixer-mic-processing-toggle"
-                aria-pressed={state.micProcessingEnabled}
-                onClick={toggleMicProcessing}
-                className={
-                  state.micProcessingEnabled
-                    ? 'inline-flex min-h-9 items-center gap-1.5 rounded-md bg-emerald-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 hover:bg-emerald-300 active:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                    : 'inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-                }
-              >
-                <BroadcastWaveIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Voice Clarity (HPF + Limiter)</span>
-              </button>
-
-              {state.micProcessingEnabled && (
-                <span
-                  data-testid="mixer-mic-processing-badge"
-                  className="rounded border border-emerald-400/40 bg-emerald-400/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-200"
-                >
-                  85Hz · 4:1
-                </span>
-              )}
-            </div>
+            <span
+              data-testid="mixer-mic-availability"
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${micAvail.badgeClass}`}
+            >
+              {micAvail.badgeText}
+            </span>
           </div>
 
-          <MicrophonePostGainMeter />
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="mixer-mic-mute-button"
+              aria-label={
+                state.microphoneChannel.muted
+                  ? 'Unmute microphone in mix (Muted)'
+                  : 'Mute microphone in mix'
+              }
+              aria-pressed={state.microphoneChannel.muted}
+              onClick={toggleMicrophoneMute}
+              className={
+                state.microphoneChannel.muted
+                  ? 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-rose-400/50 bg-rose-950/75 px-2.5 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                  : 'inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              }
+            >
+              {state.microphoneChannel.muted ||
+              state.microphoneChannel.gain === 0 ? (
+                <VolumeMutedIcon className="h-3.5 w-3.5 text-rose-300" />
+              ) : (
+                <VolumeHighIcon className="h-3.5 w-3.5 text-emerald-300" />
+              )}
+              <span>{state.microphoneChannel.muted ? 'Muted' : 'Mute'}</span>
+            </button>
+
+            <label htmlFor="mixer-mic-gain-slider" className="sr-only">
+              Microphone mix gain
+            </label>
+            <input
+              id="mixer-mic-gain-slider"
+              data-testid="mixer-mic-gain-slider"
+              type="range"
+              min={MIN_AUDIO_GAIN}
+              max={MAX_AUDIO_GAIN}
+              step={0.01}
+              value={state.microphoneChannel.gain}
+              aria-valuetext={
+                state.microphoneChannel.muted
+                  ? `Muted (${String(micGainPercent)} percent)`
+                  : `${String(micGainPercent)} percent`
+              }
+              onChange={handleMicGainChange}
+              className="min-w-[5rem] flex-1 cursor-pointer rounded-lg bg-slate-800"
+            />
+
+            <span
+              data-testid="mixer-mic-gain-value"
+              className="min-w-[3rem] text-right font-mono text-xs font-semibold text-slate-100 tabular-nums"
+            >
+              {state.microphoneChannel.muted
+                ? 'Muted'
+                : `${String(micGainPercent)}%`}
+            </span>
+
+            {micGainPercent !== 100 && (
+              <button
+                type="button"
+                data-testid="mixer-mic-unity-button"
+                aria-label="Reset microphone volume to 100%"
+                onClick={resetMicrophoneGain}
+                className="inline-flex min-h-8 items-center justify-center rounded-lg border border-white/10 bg-slate-950 px-2 py-1 text-[11px] font-medium text-sky-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+
+          {showChannelMeters && <MicrophonePostGainMeter />}
         </div>
       </div>
 
-      <p className="mt-2.5 text-[11px] text-slate-300">
-        Video audio monitors to speakers once; microphone routes exclusively to
-        the mixed recording bus with zero speaker feedback.
-      </p>
+      {/* Progressive Disclosure for Channel Level Meters */}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          data-testid="toggle-audio-meters-button"
+          aria-expanded={showChannelMeters}
+          onClick={() => setShowChannelMeters((prev) => !prev)}
+          className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-slate-300 hover:bg-white/[0.05] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+        >
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 transition-transform ${
+              showChannelMeters ? 'rotate-180' : ''
+            }`}
+          />
+          <span>
+            {showChannelMeters ? 'Hide channel meters' : 'Show channel meters'}
+          </span>
+        </button>
+      </div>
     </section>
   );
 }

@@ -199,3 +199,29 @@ Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`)
 | **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`78 modules transformed`) built in `2.13s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-DjCSujcq.css` `46.76 kB` / `8.59 kB` gzip, `dist/assets/index-YmKVadyB.js` `554.39 kB` / `143.60 kB` gzip) targeting `/ReactStage/` base path. |
 | **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `1.1m` (including `mobile-responsiveness.spec.ts` verifying all 15 widths from `320px` to `1920px` with `0` horizontal overflow, `0` clipped buttons, `0` overlapping handles/HUDs, intact media scaling, and `0` WCAG 2.1 AA `axe-core` violations). |
 | **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |
+
+---
+
+## Task 21: Creator-First Interface, Unified Bottom Control Dock, 3-Step Onboarding & Tabbed Workspace Drawer (`v1.4.0`) (COMPLETED)
+
+### Checklist
+- [x] **Clean Cinema Stage & Unified Bottom Control Dock (`src/App.tsx`, `SceneStagePanel.tsx`, `PlaybackControls.tsx`, `RecordingSessionPanel.tsx`)**:
+  - [x] Focused the primary `lg:col-span-8` workspace on `SceneStagePanel` + dark-glass `PlaybackControls` + unified bottom `RecordingSessionPanel` dock featuring 1-click `Cam On/Off` (`dock-camera-button`) and `Mic On/Off` (`dock-mic-button`) pills, glowing `Start Recording` CTA, `3s Count-In`, single session clock, inline `Chapter Bookmarks`, and `Preview & Download` take jump.
+- [x] **3-Tab Glass Workspace Drawer & Auto-Focus on Completed Takes (`StudioUiContext.tsx`, `StudioWorkspaceDrawer.tsx`)**:
+  - [x] Consolidated `WebcamCapturePanel`, `MicrophoneCapturePanel`, `AudioMixerPanel`, and `ExportPanel` into a sleek 3-tab right-hand glass drawer (`Devices`, `Audio`, `Takes`) with live status/count badges, top-level autoplay `Enable Audio` prompt, and automatic switch to `Takes` whenever a recording completes or hydrates from `IndexedDbTakeVault`.
+- [x] **3-Step On-Stage Onboarding Checklist & Progressive Disclosure**:
+  - [x] Added a friendly 3-step quick-start checklist right on the empty stage (`1. Add a video or share your screen`, `2. Check camera & mic` with inline 1-click toggles, `3. Press Start Recording below`), removed engineering jargon (`Chunks`, `Object URL revoked`, `100%` unity labels), kept `File name` + `Download Video` + `Auto-Duck Video` + `Voice Clarity` 1-click up front, and tucked advanced controls (`Customize` PIP/Split framing, `Draw` Telestrator palette, per-channel VU meters, `Trim Clip & Save Audio (.wav)`) behind clean disclosure toggles.
+- [x] **Dedicated Unit & Full 15-Viewport E2E + Accessibility Verification (`creator-ux-workspace.test.tsx` & Playwright Suite)**:
+  - [x] Added `<StrictMode>` unit/integration coverage in `tests/unit/creator-ux-workspace.test.tsx` and verified zero horizontal overflow, zero clipped text, zero element overlap, and zero WCAG 2.1 AA `axe-core` violations across all 15 standard device viewports (`320px`–`1920px`).
+
+### Final Release Verification Results (Tasks 1–21 — Release v1.4.0 Gate)
+Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`) on Windows (`Node.js` + `pnpm`):
+
+| Check | Command | Result | Actual Output Details |
+| :--- | :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | **PASS** | `tsc -b` exited `0` with `0` errors across app, node configs, unit tests, and Playwright E2E specs. |
+| **Lint** | `pnpm run lint` | **PASS** | `eslint . --max-warnings 0` (`strictTypeChecked` + `stylisticTypeChecked` + `jsx-a11y`) exited `0` with `0` errors and `0` warnings. |
+| **Unit & Integration Tests** | `pnpm run test` | **PASS** | Vitest `v3.2.7`: **23 passed test suites, 74 passed tests** in `14.91s` (including `creator-ux-workspace.test.tsx`). |
+| **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`80 modules transformed`) built in `1.65s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-CSkxMKV4.css` `55.64 kB` / `9.87 kB` gzip, `dist/assets/index-CZW3mGos.js` `564.07 kB` / `144.63 kB` gzip) targeting `/ReactStage/` base path. |
+| **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `58.5s` (including `mobile-responsiveness.spec.ts` verifying all 15 widths from `320px` to `1920px` with `0` horizontal overflow, `0` clipped buttons, `0` overlapping handles/HUDs, intact media scaling, and `0` WCAG 2.1 AA `axe-core` violations). |
+| **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |

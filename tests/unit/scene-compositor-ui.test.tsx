@@ -185,7 +185,8 @@ describe('SceneStagePanel UI, Accessibility Controls & StrictMode Lifecycle', ()
     expect(harness.compositor.getState().pipRect.x).toBeCloseTo(0.28, 2);
     expect(harness.compositor.getState().pipRect.y).toBeCloseTo(0.23, 2);
 
-    // Reset PIP restores default bottom-right bounds
+    // Open layout customization bar, then Reset PIP restores default bottom-right bounds
+    await user.click(screen.getByTestId('toggle-layout-customize-button'));
     await user.click(screen.getByTestId('pip-reset-button'));
     expect(harness.compositor.getState().pipRect.x).toBe(0.69);
     expect(harness.compositor.getState().pipRect.width).toBe(0.28);

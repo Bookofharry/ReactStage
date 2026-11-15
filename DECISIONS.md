@@ -304,3 +304,16 @@
   3. Dock `teleprompter-stage-overlay` cleanly at the top eye-line above `source-dropzone` so it never overlaps composed media or PIP handles, render `pip-drag-handle` as a compact `MoveQuadArrowsIcon` badge on `< 768px` (or `< 24%` PIP width) with screen-reader-preserved `"Move PIP"` text so `pip-drag-handle` and `pip-resize-handle` never collide even at `320px` + `16%` PIP, and expand mobile stage min-height (`min-h-[14.5rem] sm:min-h-0`) only when centered empty/error/pre-roll cards are shown.
   4. Gate every release with automated 15-viewport Playwright geometry, non-overlap, non-clipping, media-containment, modal, and `axe-core` WCAG 2.1 AA audits (`320px`, `360px`, `375px`, `390px`, `414px`, `430px`, `480px`, `640px`, `768px`, `820px`, `1024px`, `1280px`, `1440px`, `1536px`, `1920px`) in `tests/e2e/mobile-responsiveness.spec.ts`.
 - **Consequences**: Zero horizontal overflow, zero clipped text, zero overlapping controls, comfortable coarse-pointer touch targets, and verified visual/functional consistency across all 15 standard device widths.
+
+---
+
+## ADR-029: Creator-First Interface Architecture — Unified Bottom Control Dock, 3-Tab Workspace Drawer & Progressive Disclosure
+- **Status**: Accepted (Task 21 — Release v1.4.0)
+- **Context**:
+  1. Stacking six full-featured broadcast panels simultaneously on one page created visual overload, long vertical scrolling, and exposed low-level engineering jargon (`Chunks`, `Object URL revoked`, `100%` unity gain labels) alongside everyday creator actions.
+  2. First-time reaction creators benefit from a clear 1-2-3 setup path right on the stage, 1-click camera/mic toggles next to `Start Recording`, and immediate access to preview + download as soon as a recording finishes.
+- **Decision**:
+  1. Organize the studio into a **Cinema Stage + Unified Bottom Control Dock** (`SceneStagePanel` + `PlaybackControls` + `RecordingSessionPanel` in `lg:col-span-8`) paired with a **3-Tab Glass Workspace Drawer** (`StudioWorkspaceDrawer` in `lg:col-span-4`: `Devices`, `Audio`, and `Takes`) backed by `StudioUiContext`, which automatically switches to `Takes` whenever a new recording completes or hydrates from `IndexedDbTakeVault`.
+  2. Surface a **3-Step Quick-Start Onboarding Checklist** (`stage-onboarding-checklist`: `1. Add a video or share your screen`, `2. Check camera & mic` with inline 1-click toggles, `3. Press Start Recording below`) on an empty stage, and add 1-click `Cam On/Off` (`dock-camera-button`) and `Mic On/Off` (`dock-mic-button`) pills directly inside the bottom recording dock.
+  3. Apply **Progressive Disclosure** so essentials remain 1-click up front while power-user controls (`Customize` PIP/Split framing, `Draw` Telestrator ink tools, per-channel VU meters in `Audio`, and `Trim Clip & Save Audio (.wav)` in `Takes`) expand cleanly on demand, styled with dark-glass surfaces (`border-white/[0.08] bg-slate-900/75 backdrop-blur-md`) and human-friendly creator copy across all 15 verified viewports (`320px`–`1920px`).
+- **Consequences**: Dramatically calmer visual hierarchy, faster zero-scroll recording ergonomics, automatic post-take focus on preview/download, zero WCAG 2.1 AA regressions, and full responsive integrity from `320px` phones to `1920px` widescreens.

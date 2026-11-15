@@ -264,6 +264,7 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
 
     // Switch to Picture-in-Picture, snap Top-Left, and shrink PIP to minimum 16% to stress-test handle collision at 320px
     await page.getByTestId('layout-mode-pip').click();
+    await page.getByTestId('toggle-layout-customize-button').click();
     await page.getByTestId('pip-corner-top-left').click();
     await page.getByTestId('pip-size-slider').fill('0.16');
 
@@ -283,6 +284,7 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
       .toBeGreaterThanOrEqual(2);
     await page.getByTestId('stop-recording-button').click();
     await expect(page.getByTestId('export-preview-video')).toBeVisible();
+    await page.getByTestId('toggle-trim-tools-button').click();
 
     // Audit all 15 required viewports in full active studio state
     for (const vp of REQUIRED_VIEWPORTS) {

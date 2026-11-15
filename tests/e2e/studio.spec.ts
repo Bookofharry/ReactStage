@@ -75,7 +75,10 @@ test.describe('ReactStage — Task 1 Chromium E2E Suite', () => {
     await expect(page.getByTestId('webcam-capture-panel')).toBeVisible();
     await expect(page.getByTestId('microphone-capture-panel')).toBeVisible();
     await expect(page.getByTestId('recording-session-panel')).toBeVisible();
+    await expect(page.getByTestId('studio-workspace-drawer')).toBeVisible();
+    await page.getByTestId('workspace-tab-takes').click();
     await expect(page.getByTestId('export-panel')).toBeVisible();
+    await page.getByTestId('workspace-tab-devices').click();
 
     await expect(page.getByTestId('play-pause-button')).toBeDisabled();
     await expect(page.getByTestId('seek-slider')).toBeDisabled();
@@ -259,7 +262,7 @@ test.describe('ReactStage — Task 1 Chromium E2E Suite', () => {
       await expect(page.getByTestId('webcam-capture-panel')).toBeVisible();
       await expect(page.getByTestId('microphone-capture-panel')).toBeVisible();
       await expect(page.getByTestId('recording-session-panel')).toBeVisible();
-      await expect(page.getByTestId('export-panel')).toBeVisible();
+      await expect(page.getByTestId('studio-workspace-drawer')).toBeVisible();
 
       const hasHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,

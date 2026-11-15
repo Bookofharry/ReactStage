@@ -37,7 +37,7 @@ function getCameraBadgeMeta(status: CaptureChannelStatus): {
     default:
       return {
         label: 'Camera Off',
-        classes: 'border-slate-700 bg-slate-800 text-slate-300',
+        classes: 'border-white/10 bg-slate-800/90 text-slate-300',
       };
   }
 }
@@ -97,14 +97,14 @@ export function WebcamCapturePanel() {
     <section
       data-testid="webcam-capture-panel"
       aria-labelledby="webcam-panel-heading"
-      className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
+      className="flex min-w-0 flex-col rounded-xl border border-white/[0.07] bg-slate-950/65 p-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id="webcam-panel-heading"
-          className="text-sm font-semibold text-slate-100"
+          className="text-sm font-semibold text-white"
         >
-          Camera Setup
+          Camera
         </h2>
         <span
           data-testid="camera-status-badge"
@@ -120,9 +120,9 @@ export function WebcamCapturePanel() {
         </span>
       </div>
 
-      {/* Compact Self-Check Thumbnail Row (avoids stacking a second full-size preview) */}
-      <div className="mt-3 flex flex-col gap-2.5 rounded-lg border border-slate-800 bg-slate-950 p-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-3">
-        <div className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded border border-slate-800 bg-slate-900 min-[380px]:w-28 sm:w-32">
+      {/* Compact Self-Check Thumbnail Row */}
+      <div className="mt-2.5 flex flex-col gap-2.5 rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-3">
+        <div className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/[0.08] bg-slate-950 min-[380px]:w-28">
           <video
             ref={previewVideoRef}
             data-testid="webcam-preview-video"
@@ -174,27 +174,27 @@ export function WebcamCapturePanel() {
               )}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] text-slate-300">
-                  Self-check monitor
+                  Looking good!
                 </span>
                 {snapshot.mirrorPreview && (
                   <span
                     data-testid="camera-mirror-indicator"
-                    className="rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-300"
+                    className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[10px] font-medium text-sky-300"
                   >
-                    Mirrored Preview
+                    Mirrored View
                   </span>
                 )}
               </div>
             </div>
           ) : isRequesting ? (
             <p className="font-medium text-slate-100">
-              Waiting for camera permission…
+              Allow camera access in your browser prompt…
             </p>
           ) : (
             <div>
               <p className="font-medium text-slate-100">Camera is off</p>
               <p className="mt-0.5 text-[11px] leading-snug text-slate-300">
-                Permissions are requested only when you click Start Camera.
+                Turn it on whenever you want to appear on screen.
               </p>
             </div>
           )}
@@ -207,7 +207,7 @@ export function WebcamCapturePanel() {
           <div
             role="alert"
             data-testid="camera-error-alert"
-            className="mt-2.5 flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
+            className="mt-2.5 flex items-start gap-2 rounded-xl border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
           >
             <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
             <div className="min-w-0">
@@ -230,7 +230,7 @@ export function WebcamCapturePanel() {
         <div
           role="alert"
           data-testid="device-enumeration-error"
-          className="mt-2.5 rounded-lg border border-rose-500/40 bg-rose-950/70 px-3 py-2 text-xs text-rose-100 break-words"
+          className="mt-2.5 rounded-xl border border-rose-500/40 bg-rose-950/70 px-3 py-2 text-xs text-rose-100 break-words"
         >
           <span className="font-semibold">
             {snapshot.deviceEnumerationError.title}:{' '}
@@ -240,22 +240,22 @@ export function WebcamCapturePanel() {
       )}
 
       {/* Action Buttons */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           data-testid="camera-toggle-button"
           onClick={handleToggleCamera}
           className={
             isCameraActive || isRequesting
-              ? 'inline-flex min-h-10 min-w-[8.5rem] flex-1 items-center justify-center rounded-lg border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-              : 'inline-flex min-h-10 min-w-[8.5rem] flex-1 items-center justify-center rounded-lg bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+              ? 'inline-flex min-h-10 min-w-[8rem] flex-1 items-center justify-center rounded-xl border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              : 'inline-flex min-h-10 min-w-[8rem] flex-1 items-center justify-center rounded-xl bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
           }
         >
           {isRequesting
             ? 'Cancel Camera'
             : isCameraActive
-              ? 'Stop Camera'
-              : 'Start Camera'}
+              ? 'Turn Off Camera'
+              : 'Turn On Camera'}
         </button>
 
         <button
@@ -263,33 +263,34 @@ export function WebcamCapturePanel() {
           data-testid="camera-mirror-button"
           aria-pressed={snapshot.mirrorPreview}
           onClick={toggleMirrorPreview}
-          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-900 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           <MirrorHorizontalIcon className="h-3.5 w-3.5 text-sky-300" />
-          <span>Mirror Preview</span>
+          <span>Mirror View</span>
         </button>
 
         <button
           type="button"
           data-testid="refresh-devices-button"
+          aria-label="Refresh connected camera and microphone devices"
           disabled={snapshot.isEnumeratingDevices}
           onClick={() => {
             void refreshDevices();
           }}
-          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-900 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshIcon className="h-3.5 w-3.5 text-slate-300" />
-          <span>Refresh Devices</span>
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Camera Device Selector */}
-      <div className="mt-3 flex flex-col gap-1">
+      <div className="mt-2.5 flex flex-col gap-1">
         <label
           htmlFor="camera-device-select"
           className="text-xs font-medium text-slate-300"
         >
-          Camera Source
+          Choose camera
         </label>
         <select
           id="camera-device-select"
@@ -297,9 +298,9 @@ export function WebcamCapturePanel() {
           disabled={isRequesting || !snapshot.isSupported}
           value={snapshot.selectedCameraDeviceId}
           onChange={handleDeviceChange}
-          className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-2.5 py-2 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="">System Default Camera</option>
+          <option value="">Default Camera</option>
           {snapshot.availableCameras.map((camera) => (
             <option key={camera.deviceId} value={camera.deviceId}>
               {camera.label}
@@ -307,11 +308,6 @@ export function WebcamCapturePanel() {
           ))}
         </select>
       </div>
-
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-300">
-        Mirror Preview uses CSS on the self-check thumbnail only — Live Scene
-        Stage canvas output remains unflipped.
-      </p>
     </section>
   );
 }

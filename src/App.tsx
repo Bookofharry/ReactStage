@@ -1,13 +1,10 @@
-import { AudioMixerPanel } from './components/AudioMixerPanel';
-import { ExportPanel } from './components/ExportPanel';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
-import { MicrophoneCapturePanel } from './components/MicrophoneCapturePanel';
 import { PlaybackControls } from './components/PlaybackControls';
 import { RecordingSessionPanel } from './components/RecordingSessionPanel';
 import { SceneStagePanel } from './components/SceneStagePanel';
 import { StudioHeader } from './components/StudioHeader';
 import { StudioPresetsModal } from './components/StudioPresetsModal';
-import { WebcamCapturePanel } from './components/WebcamCapturePanel';
+import { StudioWorkspaceDrawer } from './components/StudioWorkspaceDrawer';
 import type { MicrophoneLevelMeter } from './services/capture-manager';
 import type { AudioMixer } from './services/interfaces/audio-mixer';
 import type { CaptureManager } from './services/interfaces/capture-manager';
@@ -26,6 +23,7 @@ import { PwaProvider } from './state/PwaContext';
 import { RecordingSessionProvider } from './state/RecordingSessionContext';
 import { StudioPreferencesProvider } from './state/StudioPreferencesContext';
 import { StudioShortcutsProvider } from './state/StudioShortcutsContext';
+import { StudioUiProvider } from './state/StudioUiContext';
 import type { RecordingSessionState } from './types/media';
 
 export interface AppProps {
@@ -58,61 +56,68 @@ export function App({
   return (
     <PwaProvider>
       <CaptureProvider manager={captureManager} levelMeter={levelMeter}>
-      <SourcePlaybackProvider player={player}>
-        <AudioMixerProvider mixer={audioMixer}>
-          <CompositorProvider compositor={compositor}>
-            <RecordingSessionProvider
-              engine={recordingEngine}
-              initialState={initialRecordingState}
-              countdownStepMs={countdownStepMs}
-            >
-              <ExportProvider manager={exportManager} vault={takeVault}>
-                <StudioShortcutsProvider>
-                  <StudioPreferencesProvider
-                    preferencesStore={preferencesStore}
-                  >
-                    <div className="flex min-h-dvh w-full flex-col overflow-x-clip bg-slate-950 text-slate-100">
-                      <StudioHeader />
+        <SourcePlaybackProvider player={player}>
+          <AudioMixerProvider mixer={audioMixer}>
+            <CompositorProvider compositor={compositor}>
+              <RecordingSessionProvider
+                engine={recordingEngine}
+                initialState={initialRecordingState}
+                countdownStepMs={countdownStepMs}
+              >
+                <ExportProvider manager={exportManager} vault={takeVault}>
+                  <StudioShortcutsProvider>
+                    <StudioPreferencesProvider
+                      preferencesStore={preferencesStore}
+                    >
+                      <StudioUiProvider>
+                        <div className="relative flex min-h-dvh w-full flex-col overflow-x-clip bg-slate-950 text-slate-100">
+                          {/* Subtle atmospheric creator-studio radial glow */}
+                          <div
+                            aria-hidden="true"
+                            className="pointer-events-none fixed inset-x-0 top-0 h-[34rem] bg-[radial-gradient(ellipse_75%_55%_at_50%_-10%,rgba(56,189,248,0.11),transparent_70%)]"
+                          />
 
-                      <main
-                        id="studio-main"
-                        className="mx-auto w-full max-w-[96rem] flex-1 px-2.5 py-3 min-[375px]:px-3.5 sm:px-5 sm:py-5 lg:px-6 xl:px-8"
-                      >
-                        <div className="grid grid-cols-1 gap-3.5 sm:gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
-                          <div className="flex min-w-0 flex-col gap-3.5 sm:gap-4 lg:col-span-8">
-                            <SceneStagePanel />
-                            <PlaybackControls />
-                            <AudioMixerPanel />
-                          </div>
+                          <StudioHeader />
 
-                          <aside
-                            aria-label="Creator capture setup and studio pipeline"
-                            className="grid min-w-0 grid-cols-1 items-start gap-3.5 sm:gap-4 md:grid-cols-2 lg:col-span-4 lg:grid-cols-1"
+                          <main
+                            id="studio-main"
+                            className="relative z-10 mx-auto w-full max-w-[96rem] flex-1 px-2.5 py-3 min-[375px]:px-3.5 sm:px-5 sm:py-5 lg:px-6 xl:px-8"
                           >
-                            <WebcamCapturePanel />
-                            <MicrophoneCapturePanel />
-                            <RecordingSessionPanel />
-                            <ExportPanel />
-                          </aside>
+                            <div className="grid grid-cols-1 items-start gap-3.5 sm:gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
+                              {/* Primary Cinema Stage + Unified Bottom Control Dock */}
+                              <div className="flex min-w-0 flex-col gap-3 sm:gap-3.5 lg:col-span-8">
+                                <SceneStagePanel />
+                                <PlaybackControls />
+                                <RecordingSessionPanel />
+                              </div>
+
+                              {/* Tabbed Studio Inspector Drawer (Devices · Audio · Takes) */}
+                              <aside
+                                aria-label="Studio setup, audio mix, and recorded takes"
+                                className="min-w-0 lg:col-span-4 lg:sticky lg:top-4"
+                              >
+                                <StudioWorkspaceDrawer />
+                              </aside>
+                            </div>
+                          </main>
+
+                          <footer className="relative z-10 border-t border-white/[0.06] bg-slate-950/80 px-3 py-3 text-center text-xs leading-relaxed text-slate-300 break-words sm:px-6 sm:py-3.5">
+                            ReactStage · Free &amp; Open-Source Creator Studio ·
+                            100% private on your device
+                          </footer>
+
+                          <StudioPresetsModal />
+                          <KeyboardShortcutsModal />
                         </div>
-                      </main>
-
-                      <footer className="border-t border-slate-900 bg-slate-950 px-3 py-3 text-center text-xs leading-relaxed text-slate-300 break-words sm:px-6 sm:py-3.5">
-                        ReactStage · Free &amp; Open-Source Local-First Video
-                        Reaction Studio · Media stays on your device
-                      </footer>
-
-                      <StudioPresetsModal />
-                      <KeyboardShortcutsModal />
-                    </div>
-                  </StudioPreferencesProvider>
-                </StudioShortcutsProvider>
-              </ExportProvider>
-            </RecordingSessionProvider>
-          </CompositorProvider>
-        </AudioMixerProvider>
-      </SourcePlaybackProvider>
-    </CaptureProvider>
+                      </StudioUiProvider>
+                    </StudioPreferencesProvider>
+                  </StudioShortcutsProvider>
+                </ExportProvider>
+              </RecordingSessionProvider>
+            </CompositorProvider>
+          </AudioMixerProvider>
+        </SourcePlaybackProvider>
+      </CaptureProvider>
     </PwaProvider>
   );
 }
