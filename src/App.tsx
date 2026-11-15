@@ -71,15 +71,15 @@ export function App({
                   <StudioPreferencesProvider
                     preferencesStore={preferencesStore}
                   >
-                    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+                    <div className="flex min-h-dvh w-full flex-col overflow-x-clip bg-slate-950 text-slate-100">
                       <StudioHeader />
 
                       <main
                         id="studio-main"
-                        className="mx-auto w-full max-w-7xl flex-1 px-4 py-4 sm:py-6 lg:px-6"
+                        className="mx-auto w-full max-w-[96rem] flex-1 px-2.5 py-3 min-[375px]:px-3.5 sm:px-5 sm:py-5 lg:px-6 xl:px-8"
                       >
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-                          <div className="flex min-w-0 flex-col gap-4 lg:col-span-8">
+                        <div className="grid grid-cols-1 gap-3.5 sm:gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
+                          <div className="flex min-w-0 flex-col gap-3.5 sm:gap-4 lg:col-span-8">
                             <SceneStagePanel />
                             <PlaybackControls />
                             <AudioMixerPanel />
@@ -87,7 +87,7 @@ export function App({
 
                           <aside
                             aria-label="Creator capture setup and studio pipeline"
-                            className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:col-span-4 lg:grid-cols-1"
+                            className="grid min-w-0 grid-cols-1 items-start gap-3.5 sm:gap-4 md:grid-cols-2 lg:col-span-4 lg:grid-cols-1"
                           >
                             <WebcamCapturePanel />
                             <MicrophoneCapturePanel />
@@ -97,7 +97,7 @@ export function App({
                         </div>
                       </main>
 
-                      <footer className="border-t border-slate-900 bg-slate-950 px-4 py-3 text-center text-xs text-slate-300">
+                      <footer className="border-t border-slate-900 bg-slate-950 px-3 py-3 text-center text-xs leading-relaxed text-slate-300 break-words sm:px-6 sm:py-3.5">
                         ReactStage · Free &amp; Open-Source Local-First Video
                         Reaction Studio · Media stays on your device
                       </footer>

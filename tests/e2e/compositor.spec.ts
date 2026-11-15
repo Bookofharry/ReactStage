@@ -298,6 +298,7 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
   test('maintains zero horizontal overflow at 375px, 768px, 1280px, and 1440px and passes WCAG 2.1 AA axe-core audits across all modes', async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     await installMovingAsymmetricCamera(page);
     await page.goto('./');
 

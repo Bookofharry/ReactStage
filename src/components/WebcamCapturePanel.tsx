@@ -97,9 +97,9 @@ export function WebcamCapturePanel() {
     <section
       data-testid="webcam-capture-panel"
       aria-labelledby="webcam-panel-heading"
-      className="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg"
+      className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id="webcam-panel-heading"
           className="text-sm font-semibold text-slate-100"
@@ -121,8 +121,8 @@ export function WebcamCapturePanel() {
       </div>
 
       {/* Compact Self-Check Thumbnail Row (avoids stacking a second full-size preview) */}
-      <div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950 p-2.5">
-        <div className="relative flex aspect-video w-28 shrink-0 items-center justify-center overflow-hidden rounded border border-slate-800 bg-slate-900 sm:w-32">
+      <div className="mt-3 flex flex-col gap-2.5 rounded-lg border border-slate-800 bg-slate-950 p-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-3">
+        <div className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded border border-slate-800 bg-slate-900 min-[380px]:w-28 sm:w-32">
           <video
             ref={previewVideoRef}
             data-testid="webcam-preview-video"
@@ -166,7 +166,7 @@ export function WebcamCapturePanel() {
               {snapshot.activeCameraLabel && (
                 <p
                   data-testid="active-camera-label"
-                  className="truncate font-semibold text-slate-100"
+                  className="font-semibold text-slate-100 break-words"
                   title={snapshot.activeCameraLabel}
                 >
                   {snapshot.activeCameraLabel}
@@ -210,7 +210,7 @@ export function WebcamCapturePanel() {
             className="mt-2.5 flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
           >
             <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="font-semibold">
                   {snapshot.cameraError.title}
@@ -219,7 +219,7 @@ export function WebcamCapturePanel() {
                   {snapshot.cameraError.code}
                 </span>
               </div>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100">
+              <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100 break-words">
                 {snapshot.cameraError.message}
               </p>
             </div>
@@ -230,7 +230,7 @@ export function WebcamCapturePanel() {
         <div
           role="alert"
           data-testid="device-enumeration-error"
-          className="mt-2.5 rounded-lg border border-rose-500/40 bg-rose-950/70 px-3 py-2 text-xs text-rose-100"
+          className="mt-2.5 rounded-lg border border-rose-500/40 bg-rose-950/70 px-3 py-2 text-xs text-rose-100 break-words"
         >
           <span className="font-semibold">
             {snapshot.deviceEnumerationError.title}:{' '}
@@ -247,8 +247,8 @@ export function WebcamCapturePanel() {
           onClick={handleToggleCamera}
           className={
             isCameraActive || isRequesting
-              ? 'inline-flex min-h-9 flex-1 items-center justify-center rounded-lg border border-rose-400/50 bg-rose-950/70 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-              : 'inline-flex min-h-9 flex-1 items-center justify-center rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+              ? 'inline-flex min-h-10 min-w-[8.5rem] flex-1 items-center justify-center rounded-lg border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              : 'inline-flex min-h-10 min-w-[8.5rem] flex-1 items-center justify-center rounded-lg bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
           }
         >
           {isRequesting
@@ -263,7 +263,7 @@ export function WebcamCapturePanel() {
           data-testid="camera-mirror-button"
           aria-pressed={snapshot.mirrorPreview}
           onClick={toggleMirrorPreview}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
         >
           <MirrorHorizontalIcon className="h-3.5 w-3.5 text-sky-300" />
           <span>Mirror Preview</span>
@@ -276,7 +276,7 @@ export function WebcamCapturePanel() {
           onClick={() => {
             void refreshDevices();
           }}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshIcon className="h-3.5 w-3.5 text-slate-300" />
           <span>Refresh Devices</span>
@@ -297,7 +297,7 @@ export function WebcamCapturePanel() {
           disabled={isRequesting || !snapshot.isSupported}
           value={snapshot.selectedCameraDeviceId}
           onChange={handleDeviceChange}
-          className="min-h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">System Default Camera</option>
           {snapshot.availableCameras.map((camera) => (

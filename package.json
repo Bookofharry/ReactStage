@@ -1,6 +1,6 @@
 {
   "name": "reactstage",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "ReactStage — Free, open-source, local-first video reaction studio",
   "type": "module",

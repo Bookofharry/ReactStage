@@ -143,8 +143,8 @@ function LiveRecordingClockCard() {
   );
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 px-3.5 py-3">
-      <div className="flex items-center justify-between gap-2">
+    <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2.5 sm:px-3.5 sm:py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-[11px] font-semibold tracking-wider text-amber-300 uppercase">
             Session Recording Time
@@ -155,7 +155,7 @@ function LiveRecordingClockCard() {
         </div>
         <span
           data-testid="recording-session-time"
-          className="font-mono text-xl font-bold text-slate-100 tabular-nums"
+          className="font-mono text-[clamp(1.125rem,3vw,1.35rem)] font-bold text-slate-100 tabular-nums"
         >
           {formattedRecTime}
         </span>
@@ -259,7 +259,7 @@ export function RecordingSessionPanel() {
     <section
       data-testid="recording-session-panel"
       aria-labelledby="recording-session-heading"
-      className="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg"
+      className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -291,13 +291,13 @@ export function RecordingSessionPanel() {
       </div>
 
       {/* Pipeline Feed Pills + 3s Pre-Roll Toggle */}
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="rounded border border-slate-800 bg-slate-950 px-2 py-0.5 font-mono text-slate-200">
+          <span className="rounded border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-slate-200">
             {compositorState.width}×{compositorState.height} ·{' '}
             {formatLayoutShort(compositorState.layoutMode)}
           </span>
-          <span className="rounded border border-slate-800 bg-slate-950 px-2 py-0.5 text-slate-300">
+          <span className="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-slate-300">
             {audioBusLabel}
           </span>
         </div>
@@ -310,11 +310,11 @@ export function RecordingSessionPanel() {
           onClick={togglePreRoll}
           className={
             preRollEnabled
-              ? 'inline-flex items-center gap-1 rounded-md border border-sky-400/50 bg-sky-400/15 px-2 py-0.5 text-[11px] font-semibold text-sky-200 hover:bg-sky-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
-              : 'inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-950 px-2 py-0.5 text-[11px] font-medium text-slate-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
+              ? 'inline-flex min-h-9 items-center gap-1.5 rounded-md border border-sky-400/50 bg-sky-400/15 px-2.5 py-1.5 text-[11px] font-semibold text-sky-200 hover:bg-sky-400/25 active:bg-sky-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
+              : 'inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] font-medium text-slate-300 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
           }
         >
-          <TimerIcon className="h-3 w-3 shrink-0" />
+          <TimerIcon className="h-3.5 w-3.5 shrink-0" />
           <span>{preRollEnabled ? '3s Pre-Roll: On' : '3s Pre-Roll: Off'}</span>
         </button>
       </div>
@@ -330,14 +330,14 @@ export function RecordingSessionPanel() {
           className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
         >
           <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="font-semibold">{activeError.title}</span>
               <span className="rounded bg-rose-900/90 px-1.5 py-0.5 font-mono text-[10px] text-rose-200">
                 {activeError.code}
               </span>
             </div>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100">
+            <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100 break-words">
               {activeError.message}
             </p>
           </div>
@@ -354,7 +354,7 @@ export function RecordingSessionPanel() {
             <div className="flex items-center gap-2">
               <span
                 data-testid="preroll-panel-digit"
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-400 font-mono text-sm font-bold text-slate-950 tabular-nums"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-400 font-mono text-sm font-bold text-slate-950 tabular-nums"
               >
                 {countdownSecondsRemaining}
               </span>
@@ -363,14 +363,14 @@ export function RecordingSessionPanel() {
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 data-testid="skip-countdown-button"
                 onClick={() => {
                   void skipCountdownAndStart();
                 }}
-                className="rounded-md bg-sky-400 px-2.5 py-1 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                className="inline-flex min-h-9 items-center justify-center rounded-md bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               >
                 Start Now
               </button>
@@ -378,7 +378,7 @@ export function RecordingSessionPanel() {
                 type="button"
                 data-testid="cancel-countdown-button"
                 onClick={cancelCountdown}
-                className="rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               >
                 Cancel
               </button>
@@ -395,7 +395,7 @@ export function RecordingSessionPanel() {
               onClick={() => {
                 void requestStartRecording();
               }}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
+              className="inline-flex min-h-10 min-w-[10rem] flex-1 items-center justify-center gap-2 rounded-lg bg-rose-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-rose-300 active:bg-rose-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
             >
               <RecordCircleIcon className="h-4 w-4 shrink-0" />
               <span>
@@ -414,7 +414,7 @@ export function RecordingSessionPanel() {
                 type="button"
                 data-testid="discard-recording-button"
                 onClick={discardRecording}
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
               >
                 Discard Take
               </button>
@@ -423,13 +423,13 @@ export function RecordingSessionPanel() {
         )}
 
         {(isActiveSession || isTransitioning) && (
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap">
             <button
               type="button"
               data-testid="pause-resume-recording-button"
               disabled={isTransitioning}
               onClick={togglePauseRecording}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPaused ? (
                 <>
@@ -451,7 +451,7 @@ export function RecordingSessionPanel() {
               onClick={() => {
                 void stopRecording();
               }}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-300 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-300 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-200 active:bg-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <StopSquareIcon className="h-3.5 w-3.5 shrink-0" />
               <span>Stop &amp; Finalize</span>
@@ -462,7 +462,7 @@ export function RecordingSessionPanel() {
               data-testid="cancel-recording-button"
               disabled={isTransitioning}
               onClick={cancelRecording}
-              className="col-span-2 inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60 min-[380px]:col-span-2 sm:col-span-1"
             >
               Cancel
             </button>
@@ -471,7 +471,7 @@ export function RecordingSessionPanel() {
               <form
                 data-testid="live-chapter-markers-bar"
                 onSubmit={handleMarkerFormSubmit}
-                className="col-span-2 mt-1 flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2.5 sm:w-full"
+                className="mt-1 flex flex-col gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2.5 min-[380px]:col-span-2 sm:w-full"
               >
                 <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
                   <span className="inline-flex items-center gap-1.5 font-semibold text-sky-300">
@@ -488,7 +488,7 @@ export function RecordingSessionPanel() {
                   {activeMarkers.length > 0 && (
                     <span
                       data-testid="latest-marker-badge"
-                      className="max-w-[210px] truncate font-mono text-[11px] text-emerald-300 tabular-nums"
+                      className="min-w-0 font-mono text-[11px] text-emerald-300 tabular-nums break-words"
                     >
                       Last:{' '}
                       {formatChapterTimestamp(
@@ -500,7 +500,7 @@ export function RecordingSessionPanel() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-1.5">
                   <input
                     type="text"
                     data-testid="chapter-marker-label-input"
@@ -509,12 +509,12 @@ export function RecordingSessionPanel() {
                     value={markerLabelInput}
                     onChange={(e) => setMarkerLabelInput(e.currentTarget.value)}
                     placeholder="Chapter title (optional, or press B)…"
-                    className="min-h-8 min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="min-h-9 min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   />
                   <button
                     type="submit"
                     data-testid="add-chapter-marker-button"
-                    className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md bg-sky-400 px-2.5 py-1 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-md bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   >
                     <FlagMarkerIcon className="h-3 w-3 shrink-0" />
                     <span>Add Marker (B)</span>
@@ -544,7 +544,7 @@ export function RecordingSessionPanel() {
             </span>
           </div>
 
-          <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-200">
+          <dl className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1 text-[11px] text-slate-200 min-[360px]:grid-cols-2">
             <div>
               <dt className="inline text-slate-300">Duration: </dt>
               <dd
@@ -560,11 +560,11 @@ export function RecordingSessionPanel() {
                 {artifact.width}×{artifact.height}
               </dd>
             </div>
-            <div className="col-span-2">
+            <div className="min-[360px]:col-span-2">
               <dt className="inline text-slate-300">Format: </dt>
               <dd
                 data-testid="recorded-artifact-mime"
-                className="inline font-mono text-slate-100"
+                className="inline font-mono text-slate-100 break-words"
               >
                 {artifact.mimeType} (
                 {artifact.hasAudioTrack ? 'Video + Mixed Audio' : 'Video Only'})

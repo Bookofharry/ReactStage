@@ -199,7 +199,7 @@ export function ExportPanel() {
     <section
       data-testid="export-panel"
       aria-labelledby="export-panel-heading"
-      className="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg"
+      className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -316,7 +316,7 @@ export function ExportPanel() {
                         data-testid={`select-take-button-${entry.takeNumber}`}
                         aria-pressed={isSelected}
                         onClick={() => selectTake(entry.artifact.id)}
-                        className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                        className="flex min-h-9 min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 py-0.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
                       >
                         <span
                           className={`font-semibold ${
@@ -341,7 +341,7 @@ export function ExportPanel() {
                         data-testid={`delete-take-button-${entry.takeNumber}`}
                         aria-label={`Delete Take #${entry.takeNumber}`}
                         onClick={() => removeTake(entry.artifact.id)}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-900 text-slate-300 hover:border-rose-400/40 hover:text-rose-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-900 text-slate-300 hover:border-rose-400/40 hover:text-rose-300 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
                       </button>
@@ -390,7 +390,7 @@ export function ExportPanel() {
                 <span>Trim &amp; Companion Audio</span>
               </span>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   data-testid="trim-range-summary"
                   className="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-200 tabular-nums"
@@ -404,7 +404,7 @@ export function ExportPanel() {
                     type="button"
                     data-testid="reset-trim-button"
                     onClick={resetTrimRange}
-                    className="text-[11px] font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="min-h-8 px-1 text-[11px] font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   >
                     Reset Trim
                   </button>
@@ -412,7 +412,7 @@ export function ExportPanel() {
               </div>
             </div>
 
-            <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <div className="mt-2.5 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <label
                   htmlFor="export-trim-start-input"
@@ -429,7 +429,7 @@ export function ExportPanel() {
                   step={0.1}
                   value={trimStartSec}
                   onChange={handleTrimStartChange}
-                  className="min-h-8 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                  className="min-h-9 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                 />
               </div>
 
@@ -449,7 +449,7 @@ export function ExportPanel() {
                   step={0.1}
                   value={trimEndSec}
                   onChange={handleTrimEndChange}
-                  className="min-h-8 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                  className="min-h-9 w-full rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 font-mono text-xs text-slate-100 tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                 />
               </div>
             </div>
@@ -462,7 +462,7 @@ export function ExportPanel() {
                 onClick={() => {
                   void exportCompanionWav();
                 }}
-                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <AudioWaveformFileIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
                 <span>
@@ -477,7 +477,7 @@ export function ExportPanel() {
                 onClick={() => {
                   void exportTrimmedVideo();
                 }}
-                className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-sky-400/40 bg-sky-950/50 px-2.5 py-1.5 text-xs font-semibold text-sky-200 hover:bg-sky-900/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900 disabled:text-slate-400"
+                className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-sky-400/40 bg-sky-950/50 px-2.5 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-900/60 active:bg-sky-900/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:border-slate-800 disabled:bg-slate-900 disabled:text-slate-400"
               >
                 <ScissorsTrimIcon className="h-3.5 w-3.5 shrink-0" />
                 <span>Save Trimmed Video</span>
@@ -487,7 +487,7 @@ export function ExportPanel() {
             {lastCompanionExportMessage && (
               <p
                 data-testid="companion-export-banner"
-                className="mt-2 text-[11px] font-medium text-emerald-300"
+                className="mt-2 text-[11px] font-medium text-emerald-300 break-words"
               >
                 {lastCompanionExportMessage}
               </p>
@@ -513,7 +513,7 @@ export function ExportPanel() {
                     onClick={() => {
                       void handleCopyChapters();
                     }}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   >
                     <CopyClipboardIcon className="h-3 w-3 shrink-0" />
                     <span>{chaptersCopied ? 'Copied!' : 'Copy YouTube'}</span>
@@ -523,7 +523,7 @@ export function ExportPanel() {
                     type="button"
                     data-testid="download-chapters-txt-button"
                     onClick={handleDownloadChaptersTxt}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-sky-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] font-medium text-sky-300 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   >
                     <DownloadIcon className="h-3 w-3 shrink-0" />
                     <span>Save .txt</span>
@@ -538,19 +538,19 @@ export function ExportPanel() {
                     type="button"
                     data-testid={`seek-chapter-marker-${String(marker.index)}`}
                     onClick={() => handleSeekToMarker(marker.elapsedRecordingMs)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-left text-[11px] text-slate-100 hover:border-sky-400/50 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+                    className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-left text-[11px] text-slate-100 hover:border-sky-400/50 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
                   >
-                    <span className="font-mono font-semibold text-sky-300 tabular-nums">
+                    <span className="shrink-0 font-mono font-semibold text-sky-300 tabular-nums">
                       {formatChapterTimestamp(marker.elapsedRecordingMs)}
                     </span>
-                    <span className="max-w-[160px] truncate">{marker.label}</span>
+                    <span className="min-w-0 break-words">{marker.label}</span>
                   </button>
                 ))}
               </div>
 
               <pre
                 data-testid="youtube-chapters-preview"
-                className="mt-2 max-h-24 overflow-y-auto rounded border border-slate-800 bg-slate-900/80 p-2 font-mono text-[11px] leading-relaxed text-slate-200"
+                className="mt-2 max-h-24 overflow-x-auto overflow-y-auto whitespace-pre-wrap rounded border border-slate-800 bg-slate-900/80 p-2 font-mono text-[11px] leading-relaxed text-slate-200 break-words"
               >
                 {formattedChaptersText}
               </pre>
@@ -559,7 +559,7 @@ export function ExportPanel() {
 
           {/* Safe Filename Editor */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <label
                 htmlFor="export-filename-input"
                 className="text-xs font-medium text-slate-200"
@@ -571,7 +571,7 @@ export function ExportPanel() {
                   type="button"
                   data-testid="reset-export-filename-button"
                   onClick={resetFileNameDraft}
-                  className="text-[11px] font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+                  className="min-h-8 text-[11px] font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
                 >
                   Reset suggested
                 </button>
@@ -585,10 +585,10 @@ export function ExportPanel() {
               value={fileNameDraft}
               onChange={handleFileNameChange}
               spellCheck={false}
-              className="min-h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 font-mono text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+              className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
             />
 
-            <p className="truncate text-[11px] text-slate-300">
+            <p className="text-[11px] leading-snug text-slate-300 break-all">
               Saves as:{' '}
               <code
                 data-testid="export-normalized-filename"
@@ -607,7 +607,7 @@ export function ExportPanel() {
             onClick={() => {
               void downloadArtifact();
             }}
-            className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-emerald-300 active:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
           >
             <DownloadIcon className="h-4 w-4 shrink-0" />
             <span>
@@ -620,10 +620,10 @@ export function ExportPanel() {
           {state.lastExportResult && (
             <div
               data-testid="export-success-banner"
-              className="rounded-lg border border-emerald-400/35 bg-emerald-950/35 px-3 py-2 text-[11px] text-emerald-200"
+              className="rounded-lg border border-emerald-400/35 bg-emerald-950/35 px-3 py-2 text-[11px] leading-relaxed text-emerald-200 break-words"
             >
               Saved{' '}
-              <span className="font-mono font-semibold">
+              <span className="font-mono font-semibold break-all">
                 {state.lastExportResult.downloadFileName}
               </span>{' '}
               ({formatBytes(state.lastExportResult.sizeBytes)}) to your local

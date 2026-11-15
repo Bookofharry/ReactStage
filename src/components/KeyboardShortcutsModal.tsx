@@ -131,7 +131,7 @@ export function KeyboardShortcutsModal() {
   return (
     <div
       data-testid="keyboard-shortcuts-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4"
     >
       <button
         type="button"
@@ -147,21 +147,21 @@ export function KeyboardShortcutsModal() {
         aria-modal="true"
         aria-labelledby="shortcuts-modal-title"
         data-testid="keyboard-shortcuts-modal"
-        className="relative z-10 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl"
+        className="relative z-10 flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 shadow-2xl"
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3.5 sm:px-5">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-start justify-between gap-2.5 border-b border-slate-800 px-3.5 py-3 sm:items-center sm:px-5 sm:py-3.5">
+          <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-sky-400/30 bg-sky-400/10 text-sky-300">
               <KeyboardIcon className="h-4 w-4" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2
                 id="shortcuts-modal-title"
                 className="text-sm font-bold text-slate-100 sm:text-base"
               >
                 Studio Keyboard Shortcuts
               </h2>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs leading-snug text-slate-300">
                 Automatically paused whenever typing in text inputs or selects
               </p>
             </div>
@@ -173,20 +173,20 @@ export function KeyboardShortcutsModal() {
             data-testid="close-shortcuts-modal-button"
             aria-label="Close keyboard shortcuts dialog"
             onClick={closeShortcutsModal}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="flex-1 space-y-4 overflow-y-auto px-3.5 py-3.5 sm:px-5 sm:py-4">
           {/* WCAG 2.1.4 Single-Key Shortcut Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 sm:px-3.5">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-slate-100">
                 Single-key studio shortcuts
               </p>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] leading-snug text-slate-300">
                 Turn off single-character hotkeys if you use speech or switch
                 navigation (WCAG 2.1.4).
               </p>
@@ -199,8 +199,8 @@ export function KeyboardShortcutsModal() {
               onClick={toggleShortcutsEnabled}
               className={
                 shortcutsEnabled
-                  ? 'rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                  : 'rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+                  ? 'inline-flex min-h-9 items-center justify-center rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 active:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                  : 'inline-flex min-h-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
               }
             >
               {shortcutsEnabled ? 'Shortcuts Enabled' : 'Shortcuts Disabled'}
@@ -216,10 +216,12 @@ export function KeyboardShortcutsModal() {
                 {group.items.map((item) => (
                   <div
                     key={item.description}
-                    className="flex items-center justify-between gap-3 px-3.5 py-2 text-xs"
+                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-3 py-2 text-xs sm:px-3.5"
                   >
-                    <span className="text-slate-200">{item.description}</span>
-                    <span className="flex shrink-0 items-center gap-1">
+                    <span className="min-w-0 flex-1 text-slate-200 break-words">
+                      {item.description}
+                    </span>
+                    <span className="flex shrink-0 flex-wrap items-center gap-1">
                       {item.keys.map((k, idx) => (
                         <span key={k} className="inline-flex items-center gap-1">
                           {idx > 0 && (

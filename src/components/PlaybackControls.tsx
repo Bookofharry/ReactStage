@@ -90,16 +90,16 @@ export function PlaybackControls() {
     <section
       data-testid="source-playback-controls"
       aria-labelledby="playback-controls-heading"
-      className="rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg"
+      className="min-w-0 rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-800 pb-2.5 sm:gap-2">
         <h2
           id="playback-controls-heading"
           className="text-sm font-semibold text-slate-100"
         >
           Source Video Transport
         </h2>
-        <span className="text-[11px] text-slate-300">
+        <span className="text-[11px] leading-snug text-slate-300">
           Pausing or seeking holds the source frame while webcam &amp; mic mix
           stay live
         </span>
@@ -109,7 +109,7 @@ export function PlaybackControls() {
         {/* Scrubber & Dual Clock Comparison */}
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span className="font-semibold text-sky-300">Source Playback</span>
               <span
                 data-testid="source-playback-time"
@@ -123,7 +123,7 @@ export function PlaybackControls() {
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-300">
+            <div className="flex flex-wrap items-center gap-1.5 text-slate-300">
               <span>Recording Time:</span>
               <TransportRecordingTimeBadge />
             </div>
@@ -147,13 +147,13 @@ export function PlaybackControls() {
                 : `${formatSpokenDuration(state.currentTimeSec)} of ${formatSpokenDuration(state.durationSec)}`
             }
             onChange={handleSeekChange}
-            className="h-2 w-full cursor-pointer rounded-lg bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full cursor-pointer rounded-lg bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
         {/* Transport Buttons, Playback Speed, and Unified Source Gain/Mute */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 min-[420px]:flex min-[420px]:flex-wrap min-[420px]:items-center">
             <button
               type="button"
               data-testid="play-pause-button"
@@ -168,7 +168,7 @@ export function PlaybackControls() {
                     : 'Play source video'
               }
               onClick={handlePlayPauseClick}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400"
+              className="col-span-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400 min-[420px]:col-span-1"
             >
               {isPlaying ? (
                 <>
@@ -189,7 +189,7 @@ export function PlaybackControls() {
               disabled={!canScrubTimeline}
               aria-label="Rewind 10s"
               onClick={() => rewind(10)}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
               <RewindIcon className="h-4 w-4" />
               <span>Rewind 10s</span>
@@ -201,16 +201,16 @@ export function PlaybackControls() {
               disabled={!canScrubTimeline}
               aria-label="Restart source video from beginning"
               onClick={restart}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-100 hover:border-slate-600 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
               <RestartIcon className="h-4 w-4" />
               <span>Restart</span>
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             {/* Speed Selector */}
-            <div className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5">
+            <div className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5">
               <label
                 htmlFor="playback-speed-select"
                 className="text-xs font-medium text-slate-300"
@@ -223,7 +223,7 @@ export function PlaybackControls() {
                 disabled={isScreenMode}
                 value={state.playbackRate}
                 onChange={handleSpeedChange}
-                className="rounded bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-8 rounded bg-slate-900 px-2 py-1 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {SUPPORTED_PLAYBACK_SPEEDS.map((speed) => (
                   <option key={speed} value={speed}>
@@ -234,7 +234,7 @@ export function PlaybackControls() {
             </div>
 
             {/* Unified Video Audio Gain & Mute */}
-            <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 sm:flex-initial">
+            <div className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 sm:flex-initial">
               <button
                 type="button"
                 data-testid="mute-toggle-button"
@@ -243,7 +243,7 @@ export function PlaybackControls() {
                 }
                 aria-pressed={sourceMuted}
                 onClick={toggleSourceMute}
-                className="rounded p-1 text-slate-100 transition hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md text-slate-100 transition hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               >
                 {sourceMuted || sourceGain === 0 ? (
                   <VolumeMutedIcon className="h-4 w-4 text-rose-300" />
@@ -269,12 +269,12 @@ export function PlaybackControls() {
                     : `${effectiveVolumePercent} percent`
                 }
                 onChange={handleVolumeChange}
-                className="h-2 w-24 cursor-pointer rounded-lg bg-slate-800 sm:w-28"
+                className="min-w-[4.5rem] flex-1 cursor-pointer rounded-lg bg-slate-800 sm:w-28 sm:flex-initial"
               />
 
               <span
                 data-testid="volume-display"
-                className="min-w-[3.25rem] text-right font-mono text-xs font-medium text-slate-100 tabular-nums"
+                className="min-w-[3.1rem] shrink-0 text-right font-mono text-xs font-medium text-slate-100 tabular-nums"
               >
                 {sourceMuted ? 'Muted' : `${effectiveVolumePercent}%`}
               </span>

@@ -3,11 +3,22 @@
 @layer base {
   :root {
     color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   body {
-    margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
+    line-height: 1.5;
     font-family:
       Inter,
       ui-sans-serif,
@@ -19,7 +30,34 @@
       sans-serif;
   }
 
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
   input[type='range'] {
     accent-color: #38bdf8;
+    min-height: 1.5rem;
+  }
+
+  @media (pointer: coarse) {
+    input[type='range'] {
+      min-height: 2rem;
+    }
   }
 }

@@ -138,10 +138,10 @@ export function MicrophoneCapturePanel() {
     <section
       data-testid="microphone-capture-panel"
       aria-labelledby="microphone-panel-heading"
-      className="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-lg"
+      className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 shadow-lg min-[375px]:p-3.5 sm:p-4"
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h2
             id="microphone-panel-heading"
             className="text-sm font-semibold text-slate-100"
@@ -151,7 +151,7 @@ export function MicrophoneCapturePanel() {
           {isMicActive && snapshot.activeMicrophoneLabel && (
             <span
               data-testid="active-microphone-label"
-              className="max-w-[140px] truncate rounded bg-slate-800 px-1.5 py-0.5 text-[11px] text-sky-300"
+              className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] text-sky-300 break-words"
               title={snapshot.activeMicrophoneLabel}
             >
               {snapshot.activeMicrophoneLabel}
@@ -182,7 +182,7 @@ export function MicrophoneCapturePanel() {
             className="mt-3 flex items-start gap-2 rounded-lg border border-rose-500/40 bg-rose-950/75 p-3 text-xs text-rose-100"
           >
             <AlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="font-semibold">
                   {snapshot.microphoneError.title}
@@ -191,7 +191,7 @@ export function MicrophoneCapturePanel() {
                   {snapshot.microphoneError.code}
                 </span>
               </div>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100">
+              <p className="mt-0.5 text-[11px] leading-relaxed text-rose-100 break-words">
                 {snapshot.microphoneError.message}
               </p>
             </div>
@@ -207,8 +207,8 @@ export function MicrophoneCapturePanel() {
           onClick={handleToggleMicrophone}
           className={
             isMicActive || isRequesting
-              ? 'inline-flex min-h-9 w-full items-center justify-center rounded-lg border border-rose-400/50 bg-rose-950/70 px-3 py-1.5 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-              : 'inline-flex min-h-9 w-full items-center justify-center rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+              ? 'inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              : 'inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
           }
         >
           {isRequesting
@@ -232,7 +232,7 @@ export function MicrophoneCapturePanel() {
           disabled={isRequesting || !snapshot.isSupported}
           value={snapshot.selectedMicrophoneDeviceId}
           onChange={handleDeviceChange}
-          className="min-h-9 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">System Default Microphone</option>
           {snapshot.availableMicrophones.map((mic) => (
