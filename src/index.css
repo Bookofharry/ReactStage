@@ -7,6 +7,10 @@
     text-size-adjust: 100%;
   }
 
+  html {
+    scroll-padding-top: var(--studio-header-offset, 6.5rem);
+  }
+
   html,
   body {
     margin: 0;
@@ -38,6 +42,19 @@
 
   svg {
     flex-shrink: 0;
+  }
+
+  main,
+  section,
+  aside,
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary,
+  [role='button'] {
+    scroll-margin-top: var(--studio-header-offset, 6.5rem);
   }
 
   button,

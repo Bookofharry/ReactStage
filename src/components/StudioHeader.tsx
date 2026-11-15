@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { useSourcePlayback } from '../state/PlaybackContext';
 import { usePwaStatus } from '../state/PwaContext';
 import {
@@ -104,6 +105,49 @@ export function StudioHeader() {
   const { isOffline, canInstall, promptInstall } = usePwaStatus();
   const { openPresetsModal, snapshot: prefsSnapshot } = useStudioPreferences();
   const { openShortcutsModal } = useStudioShortcuts();
+  const headerRef = useRef<HTMLElement | null>(null);
+  const spacerRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) {
+      return undefined;
+    }
+
+    const syncHeight = () => {
+      const measured = Math.ceil(el.getBoundingClientRect().height);
+      if (measured > 0) {
+        if (spacerRef.current) {
+          spacerRef.current.style.height = `${String(measured)}px`;
+        }
+        document.documentElement.style.setProperty(
+          '--studio-header-height',
+          `${String(measured)}px`,
+        );
+        document.documentElement.style.setProperty(
+          '--studio-header-offset',
+          `${String(measured + 16)}px`,
+        );
+      }
+    };
+
+    syncHeight();
+
+    const ResizeObserverCtor = (window as Partial<typeof window>).ResizeObserver;
+    const observer = ResizeObserverCtor
+      ? new ResizeObserverCtor(() => {
+          syncHeight();
+        })
+      : null;
+    observer?.observe(el);
+    window.addEventListener('resize', syncHeight);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', syncHeight);
+    };
+  }, [canInstall, isOffline]);
+
   const sourceTimeLabel =
     playback.sourceMode === 'screen'
       ? playback.status === 'paused'
@@ -112,7 +156,12 @@ export function StudioHeader() {
       : `${formatTimecode(playback.currentTimeSec, true)} / ${formatTimecode(playback.durationSec, true)}`;
 
   return (
-    <header className="w-full border-b border-white/[0.07] bg-slate-950/80 backdrop-blur-xl">
+    <>
+      <header
+        ref={headerRef}
+        data-testid="studio-header"
+        className="fixed inset-x-0 top-0 z-40 w-full border-b border-white/[0.08] bg-slate-950/85 shadow-lg shadow-black/30 backdrop-blur-xl"
+      >
       <a
         href="#studio-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-sky-400 focus:px-4 focus:py-2 focus:font-semibold focus:text-slate-950"
@@ -252,6 +301,13 @@ export function StudioHeader() {
           </button>
         </div>
       </div>
-    </header>
+      </header>
+      <div
+        ref={spacerRef}
+        data-testid="studio-header-spacer"
+        aria-hidden="true"
+        className="h-[var(--studio-header-height,4.25rem)] w-full shrink-0"
+      />
+    </>
   );
 }

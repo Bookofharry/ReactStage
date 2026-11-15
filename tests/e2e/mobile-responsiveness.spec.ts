@@ -42,13 +42,18 @@ interface ViewportAuditResult {
   readonly pipHandlesOverlap: boolean;
   readonly prompterOverlapsStage: boolean;
   readonly emptyPromptClipped: boolean;
+  readonly headerIsFixed: boolean;
+  readonly headerOverlapsMainAtTop: boolean;
 }
 
 async function auditViewport(
   page: Page,
   expectedWidth: number,
 ): Promise<ViewportAuditResult> {
-  return page.evaluate((vw) => {
+  return page.evaluate(async (vw) => {
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
     const docEl = document.documentElement;
     const body = document.body;
 
@@ -176,6 +181,21 @@ async function auditViewport(
       }
     }
 
+    const headerEl = document.querySelector('[data-testid="studio-header"]');
+    const mainEl = document.getElementById('studio-main');
+    let headerIsFixed = false;
+    let headerOverlapsMainAtTop = false;
+    if (headerEl && mainEl) {
+      const hStyle = window.getComputedStyle(headerEl);
+      const hRect = headerEl.getBoundingClientRect();
+      headerIsFixed =
+        hStyle.position === 'fixed' && Math.abs(hRect.top) <= 0.5;
+      if (window.scrollY <= 1) {
+        const mRect = mainEl.getBoundingClientRect();
+        headerOverlapsMainAtTop = mRect.top < hRect.bottom - 1;
+      }
+    }
+
     return {
       width: vw,
       docScrollWidth: docEl.scrollWidth,
@@ -187,11 +207,21 @@ async function auditViewport(
       pipHandlesOverlap,
       prompterOverlapsStage,
       emptyPromptClipped,
+      headerIsFixed,
+      headerOverlapsMainAtTop,
     };
   }, expectedWidth);
 }
 
 function expectCleanAudit(audit: ViewportAuditResult): void {
+  expect(
+    audit.headerIsFixed,
+    `Expected fixed top navbar header at ${String(audit.width)}px`,
+  ).toBe(true);
+  expect(
+    audit.headerOverlapsMainAtTop,
+    `Fixed navbar overlapped main workspace at ${String(audit.width)}px`,
+  ).toBe(false);
   expect(
     audit.docScrollWidth,
     `Horizontal document overflow at ${String(audit.width)}px`,
@@ -243,6 +273,15 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
       const audit = await auditViewport(page, vp.width);
       expectCleanAudit(audit);
     }
+
+    // Verify fixed navbar remains pinned at top (top === 0) while scrolling the page
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.evaluate(() => window.scrollTo(0, 240));
+    const scrolledHeaderTop = await page
+      .getByTestId('studio-header')
+      .evaluate((el) => Math.abs(el.getBoundingClientRect().top));
+    expect(scrolledHeaderTop).toBeLessThanOrEqual(0.5);
+    await page.evaluate(() => window.scrollTo(0, 0));
 
     // Pass 2: Load rich active studio state (long filename video + camera + mic + Lower-Third + Teleprompter + PIP 16% Top-Left + recorded take + chapter marker + Trim/WAV panel)
     await page.setViewportSize({ width: 1280, height: 800 });

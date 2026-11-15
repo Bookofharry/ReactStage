@@ -94,7 +94,7 @@ export function App({
                               {/* Tabbed Studio Inspector Drawer (Devices · Audio · Takes) */}
                               <aside
                                 aria-label="Studio setup, audio mix, and recorded takes"
-                                className="min-w-0 lg:col-span-4 lg:sticky lg:top-4"
+                                className="min-w-0 lg:col-span-4 lg:sticky lg:top-[calc(var(--studio-header-height,3.75rem)+1rem)]"
                               >
                                 <StudioWorkspaceDrawer />
                               </aside>

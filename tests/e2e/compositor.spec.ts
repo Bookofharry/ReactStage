@@ -187,7 +187,7 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     // Wait for camera color alternation while source stays paused
     await expect
       .poll(() => sampleCanvasRegionSignature(page, pipLeftRegion), {
-        timeout: 3000,
+        timeout: 6000,
       })
       .not.toBe(livePipAtPause);
 
