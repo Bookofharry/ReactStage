@@ -52,11 +52,11 @@ export function StudioUiProvider({ children }: { readonly children: ReactNode })
     setIsSettingsModalOpen(false);
   }, []);
 
-  // Automatically bring Takes & Export into focus whenever a new recording completes or hydrates
+  // Automatically select Takes tab whenever a new recording completes or hydrates
+  // (stays collapsed on mobile until the user taps Preview or expands the drawer)
   useEffect(() => {
     if (takes.length > prevTakeCountRef.current && takes.length > 0) {
       setActiveTabState('takes');
-      setIsMobileDrawerOpen(true);
     }
     prevTakeCountRef.current = takes.length;
   }, [takes.length]);

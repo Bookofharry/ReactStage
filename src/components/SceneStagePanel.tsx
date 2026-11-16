@@ -739,12 +739,17 @@ export function SceneStagePanel() {
         onChange={handleFileInputChange}
       />
 
-      {/* Calm Single-Row Stage Bar: Only PIP / Split / Shorts + More Tools */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4">
+      {/* Calm Single-Row Stage Bar: Segmented PIP / Split / Shorts on mobile; + More Tools on desktop */}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4">
         <div
           role="group"
           aria-label="Scene layout mode"
-          className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/80 p-1"
+          className={
+            compositorState.layoutMode === 'source-only' ||
+            compositorState.layoutMode === 'camera-only'
+              ? 'flex w-full flex-wrap items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/80 p-1 sm:inline-flex sm:w-auto'
+              : 'grid w-full grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950/80 p-1 sm:inline-flex sm:w-auto'
+          }
         >
           {PRIMARY_LAYOUT_OPTIONS.map((item) => {
             const isSelected = compositorState.layoutMode === item.mode;
@@ -757,8 +762,8 @@ export function SceneStagePanel() {
                 onClick={() => handlePrimaryLayoutSelect(item.mode)}
                 className={
                   isSelected
-                    ? 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-sky-400/35 bg-sky-400/15 px-3 py-1 text-xs font-semibold text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                    : 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                    ? 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-sky-400/35 bg-sky-400/15 px-2 py-1 text-xs font-semibold text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:min-h-8 sm:px-3'
+                    : 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:min-h-8 sm:px-2.5'
                 }
               >
                 {renderLayoutIcon(item.mode)}
@@ -780,7 +785,7 @@ export function SceneStagePanel() {
           type="button"
           data-testid="open-stage-tools-button"
           onClick={openSettingsModal}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          className="hidden min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:inline-flex"
         >
           <SlidersTuneIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
           <span>More Tools</span>
@@ -1177,10 +1182,10 @@ export function SceneStagePanel() {
           className={`relative flex items-center justify-center overflow-hidden bg-slate-950 ${
             isPortraitStage
               ? hasTallStageOverlay
-                ? 'mx-auto min-h-[23rem] w-full max-w-[min(92vw,23rem)] border-x border-white/[0.08] py-4 sm:aspect-[9/16] sm:max-h-[72dvh] sm:py-0'
-                : 'mx-auto aspect-[9/16] max-h-[70dvh] w-full max-w-[min(82vw,20rem)] border-x border-white/[0.08] sm:max-w-[21rem]'
+                ? 'mx-auto min-h-[16rem] w-full max-w-[min(92vw,22rem)] border-x border-white/[0.08] py-3 sm:aspect-[9/16] sm:max-h-[70dvh] sm:py-0'
+                : 'mx-auto aspect-[9/16] max-h-[44dvh] w-full max-w-[min(78vw,18rem)] border-x border-white/[0.08] sm:max-h-[70dvh] sm:max-w-[21rem]'
               : hasTallStageOverlay
-                ? 'min-h-[22rem] w-full py-4 md:aspect-video md:min-h-[24rem] md:py-4'
+                ? 'min-h-[14.5rem] w-full py-3 sm:aspect-video sm:min-h-0 sm:py-0'
                 : 'aspect-video w-full'
           } ${isDraggingFileOver ? 'ring-2 ring-sky-400 ring-inset' : ''}`}
         >
@@ -1297,42 +1302,44 @@ export function SceneStagePanel() {
               </div>
             )}
 
-          {/* Calm, Mild Empty-Stage Welcome Prompt */}
+          {/* Calm, Mild Empty-Stage Welcome Prompt (opaque backdrop hides idle canvas wireframe) */}
           {showCenteredEmptyPrompt && (
-            <div
-              data-testid="stage-onboarding-checklist"
-              className="relative z-20 mx-3 flex w-full max-w-sm flex-col items-center rounded-2xl border border-slate-800/90 bg-slate-900/90 px-4 py-5 text-center shadow-xl sm:px-6 sm:py-6"
-            >
-              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 text-sky-300">
-                <UploadVideoIcon className="h-5 w-5" />
-              </span>
-              <h3 className="text-sm font-semibold text-white sm:text-base">
-                Add a video to react to
-              </h3>
-              <p className="mt-1 text-xs leading-relaxed text-slate-300">
-                Plays privately on your device — nothing is uploaded.
-              </p>
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950 p-3 sm:p-5">
+              <div
+                data-testid="stage-onboarding-checklist"
+                className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-slate-800/90 bg-slate-900/90 px-4 py-4 text-center shadow-lg sm:px-6 sm:py-6"
+              >
+                <span className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 text-sky-300 sm:mb-3 sm:h-10 sm:w-10">
+                  <UploadVideoIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                </span>
+                <h3 className="text-sm font-semibold text-white sm:text-base">
+                  Add a video to react to
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-300">
+                  Plays privately on your device — nothing is uploaded.
+                </p>
 
-              <div className="mt-4 flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto">
-                <button
-                  type="button"
-                  data-testid="select-video-button"
-                  onClick={openFilePicker}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:bg-sky-500 sm:min-h-10 sm:w-auto sm:px-4 sm:py-2 sm:text-xs"
-                >
-                  <span>Choose Video</span>
-                </button>
-                <button
-                  type="button"
-                  data-testid="share-screen-button"
-                  onClick={() => {
-                    void startScreenShare();
-                  }}
-                  className="hidden min-h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:inline-flex"
-                >
-                  <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-                  <span>Share Screen</span>
-                </button>
+                <div className="mt-3.5 flex w-full flex-wrap items-center justify-center gap-2 sm:mt-4 sm:w-auto">
+                  <button
+                    type="button"
+                    data-testid="select-video-button"
+                    onClick={openFilePicker}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-sky-400 px-5 py-2.5 text-sm font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:bg-sky-500 sm:min-h-10 sm:w-auto sm:px-4 sm:py-2 sm:text-xs"
+                  >
+                    <span>Choose Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="share-screen-button"
+                    onClick={() => {
+                      void startScreenShare();
+                    }}
+                    className="hidden min-h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:inline-flex"
+                  >
+                    <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                    <span>Share Screen</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1498,7 +1505,8 @@ export function SceneStagePanel() {
                   onClick={openFilePicker}
                   className="min-h-9 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:min-h-8"
                 >
-                  Change Video
+                  <span className="sm:hidden">Change</span>
+                  <span className="hidden sm:inline">Change Video</span>
                 </button>
                 <button
                   type="button"

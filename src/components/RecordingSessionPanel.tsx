@@ -117,21 +117,22 @@ function DockSessionClock({
     telemetry.status === 'paused' ||
     telemetry.recordedBytes > 0;
   const isQuietIdle =
-    statusBadge.label === 'Ready' &&
-    telemetry.elapsedRecordingMs === 0 &&
-    !showLiveSize;
+    statusBadge.label === 'Take Ready' ||
+    (statusBadge.label === 'Ready' &&
+      telemetry.elapsedRecordingMs === 0 &&
+      !showLiveSize);
 
   return (
     <div
       className={
         isQuietIdle
           ? 'sr-only'
-          : 'flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/75 px-3 py-1.5'
+          : 'sr-only sm:not-sr-only sm:flex sm:flex-wrap sm:items-center sm:gap-2 sm:rounded-xl sm:border sm:border-slate-800 sm:bg-slate-950/75 sm:px-2.5 sm:py-1.5'
       }
     >
       <span
         data-testid="recording-session-time"
-        className="font-mono text-sm font-bold text-white tabular-nums sm:text-base"
+        className="font-mono text-xs font-bold text-white tabular-nums sm:text-sm"
       >
         {formattedRecTime}
       </span>
@@ -139,7 +140,7 @@ function DockSessionClock({
       {showLiveSize && (
         <span
           data-testid="recording-bytes-readout"
-          className="font-mono text-xs font-medium text-slate-300 tabular-nums"
+          className="hidden font-mono text-xs font-medium text-slate-300 tabular-nums sm:inline"
         >
           {formatBytes(telemetry.recordedBytes)}
         </span>
@@ -393,13 +394,13 @@ export function RecordingSessionPanel() {
           )}
 
           {(isActiveSession || isTransitioning) && (
-            <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
               <button
                 type="button"
                 data-testid="pause-resume-recording-button"
                 disabled={isTransitioning}
                 onClick={togglePauseRecording}
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-700 active:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPaused ? (
                   <>
@@ -421,10 +422,13 @@ export function RecordingSessionPanel() {
                 onClick={() => {
                   void stopRecording();
                 }}
-                className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-amber-300 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-200 active:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-amber-300 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-amber-200 active:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <StopSquareIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Finish Recording</span>
+                <span>
+                  <span className="sm:hidden">Finish</span>
+                  <span className="hidden sm:inline">Finish Recording</span>
+                </span>
               </button>
 
               <button
@@ -432,7 +436,7 @@ export function RecordingSessionPanel() {
                 data-testid="cancel-recording-button"
                 disabled={isTransitioning}
                 onClick={cancelRecording}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60 min-[380px]:col-span-2 sm:col-span-1"
+                className="col-span-2 inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-1 sm:min-h-10"
               >
                 Cancel
               </button>
@@ -504,20 +508,20 @@ export function RecordingSessionPanel() {
         </div>
       )}
 
-      {/* Live Chapter Bookmark Bar (shown only during active recording) */}
+      {/* Slim Live Chapter Bookmark Bar (compact 1-row on mobile; full input on sm:) */}
       {isActiveSession && (
         <form
           data-testid="live-chapter-markers-bar"
           onSubmit={handleMarkerFormSubmit}
-          className="flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-slate-950/80 p-2.5"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/60 px-2.5 py-2 sm:flex-col sm:items-stretch"
         >
           <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-sky-300">
-              <FlagMarkerIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Chapter Bookmarks</span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-300">
+              <FlagMarkerIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+              <span>Bookmarks</span>
               <span
                 data-testid="live-markers-count"
-                className="rounded-full border border-white/10 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-100 tabular-nums"
+                className="rounded-full bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-200 tabular-nums"
               >
                 {activeMarkers.length}
               </span>
@@ -526,7 +530,7 @@ export function RecordingSessionPanel() {
             {activeMarkers.length > 0 && (
               <span
                 data-testid="latest-marker-badge"
-                className="min-w-0 font-mono text-[11px] text-emerald-300 tabular-nums break-words"
+                className="hidden min-w-0 font-mono text-[11px] text-emerald-300 tabular-nums break-words sm:inline"
               >
                 Last:{' '}
                 {formatChapterTimestamp(
@@ -538,7 +542,7 @@ export function RecordingSessionPanel() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-1.5">
+          <div className="flex items-center gap-1.5">
             <input
               type="text"
               data-testid="chapter-marker-label-input"
@@ -552,7 +556,7 @@ export function RecordingSessionPanel() {
             <button
               type="submit"
               data-testid="add-chapter-marker-button"
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 sm:min-h-9"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
             >
               <FlagMarkerIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
               <span>+ Bookmark</span>
