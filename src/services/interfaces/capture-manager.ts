@@ -38,6 +38,7 @@ export interface CaptureDeviceError {
 
 export interface CameraCaptureConfig {
   readonly deviceId?: string;
+  readonly facingMode?: 'user' | 'environment';
   readonly idealWidth?: number;
   readonly idealHeight?: number;
   readonly idealFrameRate?: number;

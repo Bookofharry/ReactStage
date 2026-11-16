@@ -1,5 +1,6 @@
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useCapture } from '../state/CaptureContext';
+import { useExport } from '../state/ExportContext';
 import {
   useRecordingSession,
   useRecordingTelemetry,
@@ -19,6 +20,7 @@ import {
   PauseIcon,
   PlayIcon,
   RecordCircleIcon,
+  RefreshIcon,
   StopSquareIcon,
   VideoCameraIcon,
 } from './StudioIcons';
@@ -184,11 +186,64 @@ export function RecordingSessionPanel() {
     snapshot: captureSnapshot,
     startCamera,
     stopCamera,
+    flipCamera,
     startMicrophone,
     stopMicrophone,
   } = useCapture();
+  const { downloadArtifact, normalizedFileName } = useExport();
   const { setActiveTab } = useStudioUi();
   const [markerLabelInput, setMarkerLabelInput] = useState('');
+  const [justSavedQuick, setJustSavedQuick] = useState(false);
+  const justSavedTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (justSavedTimerRef.current !== null) {
+        window.clearTimeout(justSavedTimerRef.current);
+      }
+    };
+  }, []);
+
+  const nav = navigator as Partial<Navigator>;
+  const canShareVideoFile =
+    typeof nav.share === 'function' && typeof nav.canShare === 'function';
+
+  const handleQuickSaveVideo = async () => {
+    const res = await downloadArtifact();
+    if (res) {
+      setJustSavedQuick(true);
+      if (justSavedTimerRef.current !== null) {
+        window.clearTimeout(justSavedTimerRef.current);
+      }
+      justSavedTimerRef.current = window.setTimeout(() => {
+        setJustSavedQuick(false);
+      }, 2000);
+    }
+  };
+
+  const handleNativeShareVideo = async () => {
+    const art = engineState.lastArtifact;
+    if (!art || !canShareVideoFile) {
+      await handleQuickSaveVideo();
+      return;
+    }
+    try {
+      const shareFile = new File([art.blob], normalizedFileName, {
+        type: art.mimeType || 'video/webm',
+      });
+      if (navigator.canShare({ files: [shareFile] })) {
+        await navigator.share({
+          files: [shareFile],
+          title: normalizedFileName,
+        });
+        return;
+      }
+    } catch {
+      // User cancelled share sheet or unsupported MIME; fall through gently
+      return;
+    }
+    await handleQuickSaveVideo();
+  };
 
   const handleMarkerFormSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -267,6 +322,21 @@ export function RecordingSessionPanel() {
             <VideoCameraIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
             <span>{isCamActive ? 'Cam On' : 'Cam Off'}</span>
           </button>
+
+          {isCamActive && (
+            <button
+              type="button"
+              data-testid="flip-camera-button"
+              aria-label="Flip front or back camera"
+              onClick={() => {
+                void flipCamera();
+              }}
+              className="inline-flex min-h-10 items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/75 px-2.5 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+            >
+              <RefreshIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+              <span>Flip</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -468,7 +538,7 @@ export function RecordingSessionPanel() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-1.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-1.5">
             <input
               type="text"
               data-testid="chapter-marker-label-input"
@@ -476,30 +546,30 @@ export function RecordingSessionPanel() {
               maxLength={MAX_CHAPTER_LABEL_LENGTH}
               value={markerLabelInput}
               onChange={(e) => setMarkerLabelInput(e.currentTarget.value)}
-              placeholder="Bookmark this moment (optional, or press B)…"
-              className="min-h-9 min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+              placeholder="Bookmark this moment (optional)…"
+              className="hidden min-h-9 min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 sm:block"
             />
             <button
               type="submit"
               data-testid="add-chapter-marker-button"
-              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 sm:min-h-9"
             >
-              <FlagMarkerIcon className="h-3 w-3 shrink-0" />
-              <span>Add Marker (B)</span>
+              <FlagMarkerIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+              <span>+ Bookmark</span>
             </button>
           </div>
         </form>
       )}
 
-      {/* Compact Take Captured Summary Banner */}
+      {/* Instant 1-Tap Mobile & Desktop Save Card (zero scrolling needed after recording!) */}
       {artifact && isIdleLike && (
         <div
           data-testid="recorded-artifact-summary"
-          className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-emerald-400/35 bg-emerald-950/35 px-3 py-2.5 text-xs"
+          className="flex flex-col gap-2.5 rounded-xl border border-emerald-400/35 bg-emerald-950/30 p-3 text-xs sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
         >
           <div className="flex min-w-0 flex-wrap items-center gap-2 text-slate-100">
             <span className="font-semibold text-emerald-200">
-              Take saved to Takes
+              {justSavedQuick ? 'Video saved!' : 'Video ready'}
             </span>
             <span
               data-testid="recorded-artifact-duration"
@@ -521,18 +591,43 @@ export function RecordingSessionPanel() {
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              data-testid="open-takes-drawer-button"
-              onClick={() => setActiveTab('takes')}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
+              data-testid="dock-save-video-button"
+              onClick={() => {
+                void handleQuickSaveVideo();
+              }}
+              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 sm:min-h-9 sm:flex-initial sm:px-3.5 sm:py-1.5"
             >
               <DownloadIcon className="h-3.5 w-3.5 shrink-0" />
-              <span>Preview &amp; Download</span>
+              <span>{justSavedQuick ? 'Saved!' : 'Save Video'}</span>
             </button>
+
+            {canShareVideoFile && (
+              <button
+                type="button"
+                data-testid="dock-share-video-button"
+                onClick={() => {
+                  void handleNativeShareVideo();
+                }}
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:min-h-9 sm:py-1.5"
+              >
+                Share
+              </button>
+            )}
+
+            <button
+              type="button"
+              data-testid="open-takes-drawer-button"
+              onClick={() => setActiveTab('takes')}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:min-h-9 sm:py-1.5"
+            >
+              Preview
+            </button>
+
             <button
               type="button"
               data-testid="discard-recording-button"
               onClick={discardRecording}
-              className="inline-flex min-h-9 items-center justify-center rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 px-2.5 py-2 text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:min-h-9 sm:py-1.5"
             >
               Discard
             </button>

@@ -259,10 +259,18 @@ test.describe('ReactStage — Task 1 Chromium E2E Suite', () => {
         page.getByRole('heading', { name: 'ReactStage' }),
       ).toBeVisible();
       await expect(page.getByTestId('source-dropzone')).toBeVisible();
-      await expect(page.getByTestId('webcam-capture-panel')).toBeVisible();
-      await expect(page.getByTestId('microphone-capture-panel')).toBeVisible();
       await expect(page.getByTestId('recording-session-panel')).toBeVisible();
       await expect(page.getByTestId('studio-workspace-drawer')).toBeVisible();
+      if (vp.width >= 1024) {
+        await expect(page.getByTestId('webcam-capture-panel')).toBeVisible();
+        await expect(
+          page.getByTestId('microphone-capture-panel'),
+        ).toBeVisible();
+      } else {
+        await expect(
+          page.getByTestId('mobile-drawer-toggle-button'),
+        ).toBeVisible();
+      }
 
       const hasHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,

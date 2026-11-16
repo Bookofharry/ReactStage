@@ -15,6 +15,8 @@ export type WorkspaceDrawerTab = 'devices' | 'audio' | 'takes';
 interface StudioUiContextValue {
   readonly activeTab: WorkspaceDrawerTab;
   readonly setActiveTab: (tab: WorkspaceDrawerTab) => void;
+  readonly isMobileDrawerOpen: boolean;
+  readonly toggleMobileDrawer: () => void;
   readonly isSettingsModalOpen: boolean;
   readonly openSettingsModal: () => void;
   readonly closeSettingsModal: () => void;
@@ -26,10 +28,21 @@ const StudioUiContext = createContext<StudioUiContextValue | null>(null);
 
 export function StudioUiProvider({ children }: { readonly children: ReactNode }) {
   const { takes } = useExport();
-  const [activeTab, setActiveTab] = useState<WorkspaceDrawerTab>('devices');
+  const [activeTabState, setActiveTabState] =
+    useState<WorkspaceDrawerTab>('devices');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDrawToolbarOpen, setIsDrawToolbarOpen] = useState(false);
   const prevTakeCountRef = useRef(0);
+
+  const setActiveTab = useCallback((tab: WorkspaceDrawerTab) => {
+    setActiveTabState(tab);
+    setIsMobileDrawerOpen(true);
+  }, []);
+
+  const toggleMobileDrawer = useCallback(() => {
+    setIsMobileDrawerOpen((prev) => !prev);
+  }, []);
 
   const openSettingsModal = useCallback(() => {
     setIsSettingsModalOpen(true);
@@ -42,15 +55,18 @@ export function StudioUiProvider({ children }: { readonly children: ReactNode })
   // Automatically bring Takes & Export into focus whenever a new recording completes or hydrates
   useEffect(() => {
     if (takes.length > prevTakeCountRef.current && takes.length > 0) {
-      setActiveTab('takes');
+      setActiveTabState('takes');
+      setIsMobileDrawerOpen(true);
     }
     prevTakeCountRef.current = takes.length;
   }, [takes.length]);
 
   const value = useMemo<StudioUiContextValue>(
     () => ({
-      activeTab,
+      activeTab: activeTabState,
       setActiveTab,
+      isMobileDrawerOpen,
+      toggleMobileDrawer,
       isSettingsModalOpen,
       openSettingsModal,
       closeSettingsModal,
@@ -58,11 +74,14 @@ export function StudioUiProvider({ children }: { readonly children: ReactNode })
       setIsDrawToolbarOpen,
     }),
     [
-      activeTab,
+      activeTabState,
       closeSettingsModal,
       isDrawToolbarOpen,
+      isMobileDrawerOpen,
       isSettingsModalOpen,
       openSettingsModal,
+      setActiveTab,
+      toggleMobileDrawer,
     ],
   );
 

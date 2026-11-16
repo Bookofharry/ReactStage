@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -29,6 +30,7 @@ export interface CaptureContextValue {
   ) => Promise<MediaStream | null>;
   readonly stopCamera: () => void;
   readonly switchCamera: (deviceId: string) => Promise<MediaStream | null>;
+  readonly flipCamera: () => Promise<MediaStream | null>;
   readonly setMirrorPreview: (mirror: boolean) => void;
   readonly toggleMirrorPreview: () => void;
   readonly startMicrophone: (
@@ -62,6 +64,7 @@ export function CaptureProvider({
 
   const activeManager = externalManager ?? internalManager;
   const activeMeter = externalMeter ?? internalMeter;
+  const facingModeRef = useRef<'user' | 'environment'>('user');
 
   const subscribeCapture = useCallback(
     (listener: () => void) => activeManager.subscribe(listener),
@@ -111,6 +114,29 @@ export function CaptureProvider({
     [activeManager],
   );
 
+  const flipCamera = useCallback(() => {
+    const current = activeManager.getSnapshot();
+    const cams = current.availableCameras;
+    if (cams.length >= 2) {
+      const currentIdx = cams.findIndex(
+        (c) =>
+          c.deviceId ===
+          (current.activeCameraDeviceId ?? current.selectedCameraDeviceId),
+      );
+      const nextCam = cams[(currentIdx + 1) % cams.length];
+      if (nextCam) {
+        return activeManager.switchCamera(nextCam.deviceId);
+      }
+    }
+    const nextFacing: 'user' | 'environment' =
+      facingModeRef.current === 'user' ? 'environment' : 'user';
+    facingModeRef.current = nextFacing;
+    return activeManager.startCamera({
+      facingMode: nextFacing,
+      mirrorPreview: nextFacing === 'user',
+    });
+  }, [activeManager]);
+
   const setMirrorPreview = useCallback(
     (mirror: boolean) => activeManager.setMirrorPreview(mirror),
     [activeManager],
@@ -147,6 +173,7 @@ export function CaptureProvider({
       startCamera,
       stopCamera,
       switchCamera,
+      flipCamera,
       setMirrorPreview,
       toggleMirrorPreview,
       startMicrophone,
@@ -160,6 +187,7 @@ export function CaptureProvider({
       startCamera,
       stopCamera,
       switchCamera,
+      flipCamera,
       setMirrorPreview,
       toggleMirrorPreview,
       startMicrophone,

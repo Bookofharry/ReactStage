@@ -19,7 +19,7 @@ export interface BrowserCaptureManagerOptions {
 }
 
 const DEFAULT_CAMERA_CONFIG: Required<
-  Omit<CameraCaptureConfig, 'deviceId'>
+  Omit<CameraCaptureConfig, 'deviceId' | 'facingMode'>
 > = {
   idealWidth: 1280,
   idealHeight: 720,
@@ -404,7 +404,8 @@ export class BrowserCaptureManager implements CaptureManager {
     }
 
     const targetDeviceId =
-      config.deviceId ?? this.snapshot.selectedCameraDeviceId;
+      config.deviceId ??
+      (config.facingMode ? '' : this.snapshot.selectedCameraDeviceId);
 
     // Deduplicate identical concurrent startCamera calls
     if (
@@ -442,7 +443,11 @@ export class BrowserCaptureManager implements CaptureManager {
       frameRate: {
         ideal: config.idealFrameRate ?? DEFAULT_CAMERA_CONFIG.idealFrameRate,
       },
-      ...(targetDeviceId ? { deviceId: { exact: targetDeviceId } } : {}),
+      ...(targetDeviceId
+        ? { deviceId: { exact: targetDeviceId } }
+        : config.facingMode
+          ? { facingMode: { ideal: config.facingMode } }
+          : {}),
     };
 
     const requestPromise = this.executeCameraRequest(

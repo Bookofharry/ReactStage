@@ -249,3 +249,27 @@ Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`)
 | **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`81 modules transformed`) built in `1.32s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-DE37xtmG.css` `51.10 kB` / `9.34 kB` gzip, `dist/assets/index-rrbgeahm.js` `562.20 kB` / `144.53 kB` gzip) targeting `/ReactStage/` base path. |
 | **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `51.6s` across all 15 widths (`320px`–`1920px`) with `0` WCAG 2.1 AA `axe-core` violations. |
 | **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |
+
+---
+
+## Task 23: Zero-Stress Mobile Video Experience & Basic Mobile Controls (`v1.6.0`) (COMPLETED)
+
+### Checklist
+- [x] **Tap-to-Play Stage, 1-Tap `9:16` Shorts & Clean Mobile Video Picker (`SceneStagePanel.tsx`)**:
+  - [x] Enabled tap-to-play/pause directly on `<canvas>` with a mobile `Tap to Play` pill when paused, automatic `9:16` (`720p-vertical`/`1080p-vertical`) <-> `16:9` aspect switching when tapping `Shorts` vs `PIP`/`Split`, and a full-width mobile `Choose Video` button (hiding desktop `Share Screen` & byte-size clutter on `< sm`).
+- [x] **Single-Row Basic Mobile Video Controls (`PlaybackControls.tsx`)**:
+  - [x] Simplified the mobile `< sm` player to a finger-friendly scrubber plus one horizontal thumb row (`Play/Pause` · `-10s` · `Mute` with `min-h-11` touch targets), keeping `Restart`, `Speed`, and the volume slider cleanly reserved for `sm:` (`>= 640px`).
+- [x] **1-Tap Front/Back Camera Flip, Single-Screen Mobile Layout & Instant Save / Share (`CaptureContext.tsx`, `RecordingSessionPanel.tsx`, `StudioWorkspaceDrawer.tsx`)**:
+  - [x] Added `flipCamera()` (`facingMode: 'user' | 'environment'` + multi-device cycle) with a 1-tap `Flip` button beside `Cam On`, collapsed `StudioWorkspaceDrawer` on `< lg` behind a 1-tap `Camera, Audio & Saved Videos` bar so 100% of the studio fits on one phone screen without scrolling, and added direct 1-tap `Save Video` (`dock-save-video-button`) + native mobile Web Share (`dock-share-video-button`) right in the Record Bar when a recording finishes.
+
+### Final Release Verification Results (Tasks 1–23 — Release v1.6.0 Gate)
+Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`) on Windows (`Node.js` + `pnpm`):
+
+| Check | Command | Result | Actual Output Details |
+| :--- | :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | **PASS** | `tsc -b` exited `0` with `0` errors across app, node configs, unit tests, and Playwright E2E specs. |
+| **Lint** | `pnpm run lint` | **PASS** | `eslint . --max-warnings 0` (`strictTypeChecked` + `stylisticTypeChecked` + `jsx-a11y`) exited `0` with `0` errors and `0` warnings. |
+| **Unit & Integration Tests** | `pnpm run test` | **PASS** | Vitest `v3.2.7`: **23 passed test suites, 74 passed tests** in `22.84s`. |
+| **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`81 modules transformed`) built in `7.53s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-CgOaMAr6.css` `52.34 kB` / `9.49 kB` gzip, `dist/assets/index-N9S4TQbF.js` `567.21 kB` / `145.82 kB` gzip) targeting `/ReactStage/` base path. |
+| **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `1.6m` across all 15 widths (`320px`–`1920px`) with `0` WCAG 2.1 AA `axe-core` violations. |
+| **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |

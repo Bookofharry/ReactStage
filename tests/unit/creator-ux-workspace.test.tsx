@@ -229,7 +229,18 @@ describe('Creator Mild UX: Calm Stage, Settings Modal & Slim Side Panel', () => 
       screen.queryByTestId('stage-onboarding-checklist'),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('dock-camera-button')).toHaveTextContent('Cam On');
+    expect(screen.getByTestId('flip-camera-button')).toBeInTheDocument();
     expect(devicesTab).toHaveTextContent('2 On');
+
+    // 1-tap Shorts pill automatically sets 9:16 portrait (720×1280) and PIP restores 16:9 (1280×720)
+    await user.click(screen.getByTestId('layout-mode-top-bottom'));
+    expect(screen.getByTestId('scene-dimensions-badge')).toHaveTextContent(
+      '720×1280',
+    );
+    await user.click(screen.getByTestId('layout-mode-pip'));
+    expect(screen.getByTestId('scene-dimensions-badge')).toHaveTextContent(
+      '1280×720',
+    );
 
     // 3. Settings & Tools modal opens cleanly and launches Draw toolbar on demand
     await user.click(screen.getByTestId('open-settings-modal-button'));
@@ -254,10 +265,11 @@ describe('Creator Mild UX: Calm Stage, Settings Modal & Slim Side Panel', () => 
     await user.click(screen.getByTestId('toggle-audio-meters-button'));
     expect(screen.getByTestId('mixer-source-meter')).toBeInTheDocument();
 
-    // 4. Completing a recording take automatically switches the drawer to the Takes tab
+    // 4. Completing a recording take surfaces 1-tap Save Video on dock AND auto-focuses Takes tab
     await user.click(screen.getByTestId('start-recording-button'));
     await user.click(await screen.findByTestId('stop-recording-button'));
 
+    expect(screen.getByTestId('dock-save-video-button')).toBeInTheDocument();
     expect(takesTab).toHaveAttribute('aria-selected', 'true');
     expect(takesTab).toHaveTextContent('1');
     expect(screen.getByTestId('download-export-button')).toBeInTheDocument();
