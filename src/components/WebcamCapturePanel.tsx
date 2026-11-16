@@ -3,7 +3,6 @@ import type { CaptureChannelStatus } from '../services/interfaces/capture-manage
 import { useCapture } from '../state/CaptureContext';
 import {
   AlertIcon,
-  CameraPlaceholderIcon,
   MirrorHorizontalIcon,
   RefreshIcon,
 } from './StudioIcons';
@@ -120,9 +119,15 @@ export function WebcamCapturePanel() {
         </span>
       </div>
 
-      {/* Compact Self-Check Thumbnail Row */}
-      <div className="mt-2.5 flex flex-col gap-2.5 rounded-xl border border-white/[0.06] bg-slate-900/75 p-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-3">
-        <div className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/[0.08] bg-slate-950 min-[380px]:w-28">
+      {/* Compact Self-Check Thumbnail Row (only shown when active or requesting; hidden when off to stay slim) */}
+      <div
+        className={
+          isCameraActive || isRequesting
+            ? 'mt-2.5 flex flex-col gap-2.5 rounded-xl border border-slate-800 bg-slate-900/75 p-2.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-3'
+            : 'hidden'
+        }
+      >
+        <div className="relative flex aspect-video w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-800 bg-slate-950 min-[380px]:w-24">
           <video
             ref={previewVideoRef}
             data-testid="webcam-preview-video"
@@ -139,10 +144,6 @@ export function WebcamCapturePanel() {
             }
           />
 
-          {snapshot.cameraStatus === 'idle' && (
-            <CameraPlaceholderIcon className="h-5 w-5 text-slate-400" />
-          )}
-
           {isRequesting && (
             <div
               role="status"
@@ -153,11 +154,6 @@ export function WebcamCapturePanel() {
               <span className="sr-only">Waiting for camera access…</span>
             </div>
           )}
-
-          {(snapshot.cameraStatus === 'error' ||
-            snapshot.cameraStatus === 'ended') && (
-            <AlertIcon className="h-5 w-5 text-rose-300" />
-          )}
         </div>
 
         <div className="min-w-0 flex-1 text-xs">
@@ -166,37 +162,23 @@ export function WebcamCapturePanel() {
               {snapshot.activeCameraLabel && (
                 <p
                   data-testid="active-camera-label"
-                  className="font-semibold text-slate-100 break-words"
+                  className="font-medium text-slate-100 break-words"
                   title={snapshot.activeCameraLabel}
                 >
                   {snapshot.activeCameraLabel}
                 </p>
               )}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] text-slate-300">
-                  Looking good!
+              {snapshot.mirrorPreview && (
+                <span
+                  data-testid="camera-mirror-indicator"
+                  className="self-start rounded-full border border-slate-700 bg-slate-950 px-2 py-0.5 text-[10px] text-slate-300"
+                >
+                  Mirrored
                 </span>
-                {snapshot.mirrorPreview && (
-                  <span
-                    data-testid="camera-mirror-indicator"
-                    className="rounded-full border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[10px] font-medium text-sky-300"
-                  >
-                    Mirrored View
-                  </span>
-                )}
-              </div>
+              )}
             </div>
-          ) : isRequesting ? (
-            <p className="font-medium text-slate-100">
-              Allow camera access in your browser prompt…
-            </p>
           ) : (
-            <div>
-              <p className="font-medium text-slate-100">Camera is off</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-slate-300">
-                Turn it on whenever you want to appear on screen.
-              </p>
-            </div>
+            <p className="text-slate-300">Allow camera in your browser…</p>
           )}
         </div>
       </div>
@@ -247,8 +229,8 @@ export function WebcamCapturePanel() {
           onClick={handleToggleCamera}
           className={
             isCameraActive || isRequesting
-              ? 'inline-flex min-h-10 min-w-[8rem] flex-1 items-center justify-center rounded-xl border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-              : 'inline-flex min-h-10 min-w-[8rem] flex-1 items-center justify-center rounded-xl bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+              ? 'inline-flex min-h-9 min-w-[8rem] flex-1 items-center justify-center rounded-xl border border-rose-400/40 bg-rose-950/60 px-3 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              : 'inline-flex min-h-9 min-w-[8rem] flex-1 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
           }
         >
           {isRequesting

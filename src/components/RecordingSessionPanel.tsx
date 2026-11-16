@@ -20,7 +20,6 @@ import {
   PlayIcon,
   RecordCircleIcon,
   StopSquareIcon,
-  TimerIcon,
   VideoCameraIcon,
 } from './StudioIcons';
 
@@ -115,9 +114,19 @@ function DockSessionClock({
     telemetry.status === 'recording' ||
     telemetry.status === 'paused' ||
     telemetry.recordedBytes > 0;
+  const isQuietIdle =
+    statusBadge.label === 'Ready' &&
+    telemetry.elapsedRecordingMs === 0 &&
+    !showLiveSize;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-slate-950/85 px-3 py-1.5">
+    <div
+      className={
+        isQuietIdle
+          ? 'sr-only'
+          : 'flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/75 px-3 py-1.5'
+      }
+    >
       <span
         data-testid="recording-session-time"
         className="font-mono text-sm font-bold text-white tabular-nums sm:text-base"
@@ -162,7 +171,6 @@ export function RecordingSessionPanel() {
     localOrchestrationError,
     preRollEnabled,
     countdownSecondsRemaining,
-    togglePreRoll,
     requestStartRecording,
     skipCountdownAndStart,
     cancelCountdown,
@@ -225,15 +233,15 @@ export function RecordingSessionPanel() {
     <section
       data-testid="recording-session-panel"
       aria-labelledby="recording-session-heading"
-      className="flex min-w-0 flex-col gap-2.5 rounded-2xl border border-white/10 bg-slate-900/85 px-3 py-3 shadow-2xl shadow-black/45 backdrop-blur-xl min-[375px]:px-3.5 sm:px-4 sm:py-3.5"
+      className="flex min-w-0 flex-col gap-2.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 px-3 py-2.5 min-[375px]:px-3.5 sm:px-4 sm:py-3"
     >
       <h2 id="recording-session-heading" className="sr-only">
         Reaction Recording
       </h2>
 
-      {/* Unified Creator Control Dock: Quick Cam/Mic · Record CTA · Session Clock */}
+      {/* Calm Record Bar: Cam · Mic · Start Recording */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
-        {/* Quick 1-Click Camera & Mic Dock Pills */}
+        {/* Quick 1-Click Camera & Mic Pills */}
         <div
           role="group"
           aria-label="Quick camera and microphone toggles"
@@ -252,8 +260,8 @@ export function RecordingSessionPanel() {
             }}
             className={
               isCamActive
-                ? 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                : 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                ? 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-emerald-400/35 bg-emerald-400/10 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:bg-emerald-400/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                : 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/75 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
             }
           >
             <VideoCameraIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
@@ -276,8 +284,8 @@ export function RecordingSessionPanel() {
             }}
             className={
               isMicActive
-                ? 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-emerald-400/40 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                : 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+                ? 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-emerald-400/35 bg-emerald-400/10 px-3 py-2 text-xs font-medium text-emerald-200 transition hover:bg-emerald-400/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
+                : 'inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/75 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
             }
           >
             <MicrophoneIcon className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
@@ -285,52 +293,33 @@ export function RecordingSessionPanel() {
           </button>
         </div>
 
-        {/* Single Session Clock & Status (right-aligned on mobile row 1, right-most on desktop) */}
         <div className="sm:order-last">
           <DockSessionClock statusBadge={badge} />
         </div>
 
-        {/* Center Primary Recording Action Cluster */}
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        {/* Primary Recording Action */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:ml-auto">
           {isIdleLike && (
-            <>
-              <button
-                type="button"
-                data-testid="start-recording-button"
-                disabled={!engineState.isSupported || isTransitioning}
-                onClick={() => {
-                  void requestStartRecording();
-                }}
-                className="inline-flex min-h-11 min-w-[11rem] flex-1 items-center justify-center gap-2 rounded-xl bg-rose-400 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-rose-500/20 transition hover:bg-rose-300 active:bg-rose-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400 disabled:shadow-none sm:flex-initial"
-              >
-                <RecordCircleIcon className="h-4 w-4 shrink-0" />
-                <span>
-                  {artifact
-                    ? preRollEnabled
-                      ? 'Record New Take (3s)'
-                      : 'Record New Take'
-                    : preRollEnabled
-                      ? 'Start Recording (3s)'
-                      : 'Start Recording'}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                data-testid="preroll-countdown-toggle"
-                aria-pressed={preRollEnabled}
-                disabled={isActiveSession || isTransitioning || isCountingDown}
-                onClick={togglePreRoll}
-                className={
-                  preRollEnabled
-                    ? 'inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-sky-400/45 bg-sky-400/15 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-400/25 active:bg-sky-400/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
-                    : 'inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 active:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 disabled:cursor-not-allowed disabled:opacity-60'
-                }
-              >
-                <TimerIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>{preRollEnabled ? '3s Count-In' : 'Instant Start'}</span>
-              </button>
-            </>
+            <button
+              type="button"
+              data-testid="start-recording-button"
+              disabled={!engineState.isSupported || isTransitioning}
+              onClick={() => {
+                void requestStartRecording();
+              }}
+              className="inline-flex min-h-10 min-w-[10.5rem] flex-1 items-center justify-center gap-2 rounded-xl bg-rose-400 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-rose-300 active:bg-rose-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-400 sm:flex-initial sm:text-sm"
+            >
+              <RecordCircleIcon className="h-4 w-4 shrink-0" />
+              <span>
+                {artifact
+                  ? preRollEnabled
+                    ? 'Record New Take (3s)'
+                    : 'Record New Take'
+                  : preRollEnabled
+                    ? 'Start Recording (3s)'
+                    : 'Start Recording'}
+              </span>
+            </button>
           )}
 
           {(isActiveSession || isTransitioning) && (

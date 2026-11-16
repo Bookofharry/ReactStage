@@ -291,21 +291,21 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
     await page.getByTestId('camera-toggle-button').click();
     await page.getByTestId('microphone-toggle-button').click();
 
-    // Enable Lower-Third + Eye-Line Teleprompter
+    // Enable Lower-Third + Eye-Line Teleprompter + shrink PIP to minimum 16% Top-Left inside Settings & Tools modal
+    await page.getByTestId('layout-mode-pip').click();
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('lower-third-toggle-button').click();
+    await page.getByTestId('teleprompter-toggle-button').click();
+    await page.getByTestId('pip-corner-top-left').click();
+    await page.getByTestId('pip-size-slider').fill('0.16');
+    await page.getByTestId('close-settings-modal-button').click();
+
     await page
       .getByTestId('lower-third-title-input')
       .fill('Responsive Multi-Device Breakdown');
-    await page.getByTestId('teleprompter-toggle-button').click();
     await page
       .getByTestId('teleprompter-script-input')
       .fill('Verify every viewport from 320px to 1920px without overlap.');
-
-    // Switch to Picture-in-Picture, snap Top-Left, and shrink PIP to minimum 16% to stress-test handle collision at 320px
-    await page.getByTestId('layout-mode-pip').click();
-    await page.getByTestId('toggle-layout-customize-button').click();
-    await page.getByTestId('pip-corner-top-left').click();
-    await page.getByTestId('pip-size-slider').fill('0.16');
 
     // Record a short reaction take with a long chapter marker label so ExportPanel + Trim + Chapter list are populated
     await page.getByTestId('start-recording-button').click();
@@ -333,9 +333,11 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
     }
 
     // Pass 3: Switch to 9:16 Vertical Shorts + Top/Bottom Split and audit all 15 required viewports
+    await page.getByTestId('open-settings-modal-button').click();
     await page
       .getByTestId('scene-resolution-select')
       .selectOption('720p-vertical');
+    await page.getByTestId('close-settings-modal-button').click();
     await page.getByTestId('layout-mode-top-bottom').click();
 
     for (const vp of REQUIRED_VIEWPORTS) {
@@ -344,7 +346,7 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
       expectCleanAudit(audit);
     }
 
-    // Pass 4: Verify Presets Modal, Shortcuts Modal, and WCAG 2.1 AA axe-core at 320px, 768px, and 1920px
+    // Pass 4: Verify Settings Modal, Presets Modal, Shortcuts Modal, and WCAG 2.1 AA axe-core at 320px, 768px, and 1920px
     for (const vp of [
       { width: 320, height: 568 },
       { width: 768, height: 1024 },
@@ -357,21 +359,21 @@ test.describe('ReactStage — 15-Viewport Responsive Layout, Touch & Accessibili
         .analyze();
       expect(axeMain.violations).toEqual([]);
 
-      const presetsTriggerId =
-        vp.width < 640
-          ? 'open-presets-modal-button-mobile'
-          : 'open-presets-modal-button';
-      const shortcutsTriggerId =
-        vp.width < 640
-          ? 'open-shortcuts-modal-button-mobile'
-          : 'open-shortcuts-modal-button';
+      await page.getByTestId('open-settings-modal-button').click();
+      await expect(page.getByTestId('studio-settings-modal')).toBeVisible();
+      const axeSettings = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+      expect(axeSettings.violations).toEqual([]);
+      expectCleanAudit(await auditViewport(page, vp.width));
 
-      await page.getByTestId(presetsTriggerId).click();
+      await page.getByTestId('open-presets-modal-button').click();
       await expect(page.getByTestId('studio-presets-modal')).toBeVisible();
       expectCleanAudit(await auditViewport(page, vp.width));
       await page.getByTestId('close-presets-modal-button').click();
 
-      await page.getByTestId(shortcutsTriggerId).click();
+      await page.getByTestId('open-settings-modal-button').click();
+      await page.getByTestId('open-shortcuts-modal-button').click();
       await expect(page.getByTestId('keyboard-shortcuts-modal')).toBeVisible();
       expectCleanAudit(await auditViewport(page, vp.width));
       await page.getByTestId('close-shortcuts-modal-button').click();

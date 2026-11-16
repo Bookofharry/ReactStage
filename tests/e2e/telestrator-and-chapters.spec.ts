@@ -7,6 +7,7 @@ test.describe('ReactStage — Tasks 9 & 10 Stage Telestrator, PIP Framing & Chap
     page,
   }) => {
     await page.goto('./');
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('toggle-draw-tools-button').click();
     await expect(page.getByTestId('telestrator-toolbar')).toBeVisible();
 
@@ -59,11 +60,12 @@ test.describe('ReactStage — Tasks 9 & 10 Stage Telestrator, PIP Framing & Chap
     });
     expect(midpointRedPixelFound).toBe(true);
 
-    // Switch back to Cursor tool, set Circle PIP + Gold Border
+    // Switch back to Cursor tool, set Circle PIP + Gold Border inside Settings modal
     await page.getByTestId('telestrator-tool-none').click();
-    await page.getByTestId('toggle-layout-customize-button').click();
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('pip-shape-circle').click();
     await page.getByTestId('pip-border-select').selectOption('amber');
+    await page.getByTestId('close-settings-modal-button').click();
 
     // 2. Start Recording, drop 2 live Chapter Markers (form + hotkey B), and Stop
     await page.getByTestId('start-recording-button').click();

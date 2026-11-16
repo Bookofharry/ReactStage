@@ -225,3 +225,27 @@ Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`)
 | **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`80 modules transformed`) built in `1.65s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-CSkxMKV4.css` `55.64 kB` / `9.87 kB` gzip, `dist/assets/index-CZW3mGos.js` `564.07 kB` / `144.63 kB` gzip) targeting `/ReactStage/` base path. |
 | **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `58.5s` (including `mobile-responsiveness.spec.ts` verifying all 15 widths from `320px` to `1920px` with `0` horizontal overflow, `0` clipped buttons, `0` overlapping handles/HUDs, intact media scaling, and `0` WCAG 2.1 AA `axe-core` violations). |
 | **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |
+
+---
+
+## Task 22: Mild & Easy Interface Simplification & `StudioSettingsModal` (`v1.5.0`) (COMPLETED)
+
+### Checklist
+- [x] **Unified `StudioSettingsModal` Packing Extra Tools & Preferences (`src/components/StudioSettingsModal.tsx`, `StudioUiContext.tsx`)**:
+  - [x] Packed `Format` (`720p`/`1080p`/Shorts), extra layouts (`Video Only` / `Cam Only`), PIP/Split fine-tuning (`Corner`, `Shape`, `Border`, `Size`, `Split Balance`), `Draw on Video`, `Title Banner`, `Speaker Notes`, `Save PNG Frame`, `3-Second Count-In`, `Pause/Resume Stage`, `Saved Presets`, and `Keyboard Shortcuts` into one clean, calm modal (`open-settings-modal-button` / `open-stage-tools-button`).
+- [x] **Mild Stage, Simpler Always-Visible Video Player & Slim Side Panel**:
+  - [x] Reduced the stage top bar to a single calm row (`PIP` · `Split` · `Shorts` + `More Tools`), replaced the multi-box stage checklist with one friendly `"Add a video to react to"` card (`Choose Video` / `Share Screen`), streamlined the fixed single-row navbar (`ReactStage` + `Settings & Tools`), simplified `PlaybackControls` and `RecordingSessionPanel` (`Cam` · `Mic` · `Start Recording`), and collapsed idle camera/mic placeholders in the slim `xl:col-span-3` side panel.
+- [x] **15-Viewport & WCAG 2.1 AA Verification**:
+  - [x] Verified `StudioSettingsModal`, `StudioPresetsModal`, `KeyboardShortcutsModal`, and the mild workspace across all 15 widths (`320px`–`1920px`) with `0` horizontal overflow, `0` clipped labels, `0` overlaps, and `0` `axe-core` violations.
+
+### Final Release Verification Results (Tasks 1–22 — Release v1.5.0 Gate)
+Executed via `pnpm run check` (`typecheck && lint && test && build && test:e2e`) on Windows (`Node.js` + `pnpm`):
+
+| Check | Command | Result | Actual Output Details |
+| :--- | :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | **PASS** | `tsc -b` exited `0` with `0` errors across app, node configs, unit tests, and Playwright E2E specs. |
+| **Lint** | `pnpm run lint` | **PASS** | `eslint . --max-warnings 0` (`strictTypeChecked` + `stylisticTypeChecked` + `jsx-a11y`) exited `0` with `0` errors and `0` warnings. |
+| **Unit & Integration Tests** | `pnpm run test` | **PASS** | Vitest `v3.2.7`: **23 passed test suites, 74 passed tests** in `12.34s`. |
+| **Production Build** | `pnpm run build` | **PASS** | Vite `v6.4.6` (`81 modules transformed`) built in `1.32s` with `0` warnings (`dist/offline-manifest.json` `0.24 kB`, `dist/index.html` `0.92 kB`, `dist/assets/index-DE37xtmG.css` `51.10 kB` / `9.34 kB` gzip, `dist/assets/index-rrbgeahm.js` `562.20 kB` / `144.53 kB` gzip) targeting `/ReactStage/` base path. |
+| **Chromium E2E + 15-Viewport Audit + A11y** | `pnpm run test:e2e` | **PASS** | Playwright Chromium: **23 passed E2E tests** in `51.6s` across all 15 widths (`320px`–`1920px`) with `0` WCAG 2.1 AA `axe-core` violations. |
+| **Full Composite Gate** | `pnpm run check` | **PASS** | Sequential execution of `typecheck && lint && test && build && test:e2e` exited `0` cleanly. |

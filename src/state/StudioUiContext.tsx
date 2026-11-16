@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -14,6 +15,11 @@ export type WorkspaceDrawerTab = 'devices' | 'audio' | 'takes';
 interface StudioUiContextValue {
   readonly activeTab: WorkspaceDrawerTab;
   readonly setActiveTab: (tab: WorkspaceDrawerTab) => void;
+  readonly isSettingsModalOpen: boolean;
+  readonly openSettingsModal: () => void;
+  readonly closeSettingsModal: () => void;
+  readonly isDrawToolbarOpen: boolean;
+  readonly setIsDrawToolbarOpen: (open: boolean) => void;
 }
 
 const StudioUiContext = createContext<StudioUiContextValue | null>(null);
@@ -21,7 +27,17 @@ const StudioUiContext = createContext<StudioUiContextValue | null>(null);
 export function StudioUiProvider({ children }: { readonly children: ReactNode }) {
   const { takes } = useExport();
   const [activeTab, setActiveTab] = useState<WorkspaceDrawerTab>('devices');
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isDrawToolbarOpen, setIsDrawToolbarOpen] = useState(false);
   const prevTakeCountRef = useRef(0);
+
+  const openSettingsModal = useCallback(() => {
+    setIsSettingsModalOpen(true);
+  }, []);
+
+  const closeSettingsModal = useCallback(() => {
+    setIsSettingsModalOpen(false);
+  }, []);
 
   // Automatically bring Takes & Export into focus whenever a new recording completes or hydrates
   useEffect(() => {
@@ -35,8 +51,19 @@ export function StudioUiProvider({ children }: { readonly children: ReactNode })
     () => ({
       activeTab,
       setActiveTab,
+      isSettingsModalOpen,
+      openSettingsModal,
+      closeSettingsModal,
+      isDrawToolbarOpen,
+      setIsDrawToolbarOpen,
     }),
-    [activeTab],
+    [
+      activeTab,
+      closeSettingsModal,
+      isDrawToolbarOpen,
+      isSettingsModalOpen,
+      openSettingsModal,
+    ],
   );
 
   return (

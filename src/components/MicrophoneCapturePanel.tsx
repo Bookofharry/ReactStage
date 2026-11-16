@@ -194,7 +194,9 @@ export function MicrophoneCapturePanel() {
           </div>
         )}
 
-      <MicrophoneLevelMeterReadout />
+      <div className={isMicActive ? 'block' : 'hidden'}>
+        <MicrophoneLevelMeterReadout />
+      </div>
 
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <button
@@ -203,8 +205,8 @@ export function MicrophoneCapturePanel() {
           onClick={handleToggleMicrophone}
           className={
             isMicActive || isRequesting
-              ? 'inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-rose-400/50 bg-rose-950/70 px-3 py-2 text-xs font-semibold text-rose-100 hover:bg-rose-900/80 active:bg-rose-900/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
-              : 'inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-sky-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 active:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+              ? 'inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-rose-400/40 bg-rose-950/60 px-3 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-900/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
+              : 'inline-flex min-h-9 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
           }
         >
           {isRequesting

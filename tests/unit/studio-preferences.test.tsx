@@ -116,13 +116,14 @@ describe('Task 8 StudioPreferencesStore & Creator Presets UI', () => {
 
     // Adjust layout -> side-by-side, resolution -> 1080p, mic gain -> 1.35, 3s Pre-Roll -> On
     await user.click(screen.getByTestId('layout-mode-side-by-side'));
+    fireEvent.change(screen.getByTestId('mixer-mic-gain-slider'), {
+      target: { value: '1.35' },
+    });
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await user.selectOptions(
       screen.getByTestId('scene-resolution-select'),
       '1080p',
     );
-    fireEvent.change(screen.getByTestId('mixer-mic-gain-slider'), {
-      target: { value: '1.35' },
-    });
     await user.click(screen.getByTestId('preroll-countdown-toggle'));
 
     // Open Presets modal and save custom preset "My Lecture Setup"
@@ -156,12 +157,13 @@ describe('Task 8 StudioPreferencesStore & Creator Presets UI', () => {
       'aria-pressed',
       'true',
     );
-    expect(
-      screen.getByTestId<HTMLSelectElement>('scene-resolution-select').value,
-    ).toBe('1080p');
     expect(screen.getByTestId('mixer-mic-gain-value')).toHaveTextContent(
       '135%',
     );
+    await user.click(screen.getByTestId('open-settings-modal-button'));
+    expect(
+      screen.getByTestId<HTMLSelectElement>('scene-resolution-select').value,
+    ).toBe('1080p');
     expect(screen.getByTestId('preroll-countdown-toggle')).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -196,11 +198,13 @@ describe('Task 8 StudioPreferencesStore & Creator Presets UI', () => {
       'aria-pressed',
       'true',
     );
-    expect(
-      screen.getByTestId<HTMLSelectElement>('scene-resolution-select').value,
-    ).toBe('720p');
     expect(screen.getByTestId('mixer-mic-gain-value')).toHaveTextContent(
       '100%',
     );
+    await user.click(screen.getByTestId('close-presets-modal-button'));
+    await user.click(screen.getByTestId('open-settings-modal-button'));
+    expect(
+      screen.getByTestId<HTMLSelectElement>('scene-resolution-select').value,
+    ).toBe('720p');
   });
 });

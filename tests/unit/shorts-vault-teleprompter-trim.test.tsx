@@ -433,10 +433,11 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
         'aria-pressed',
         'true',
       );
-      await user.click(screen.getByTestId('toggle-layout-customize-button'));
+      await user.click(screen.getByTestId('open-settings-modal-button'));
       expect(screen.getByTestId('split-ratio-readout')).toHaveTextContent(
         '50% Top Source / 50% Bottom Webcam',
       );
+      await user.click(screen.getByTestId('close-settings-modal-button'));
 
       // Press hotkey 't' -> Toggle Eye-Line Teleprompter HUD & enter private script
       fireEvent.keyDown(window, { key: 't' });
@@ -450,10 +451,12 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
       );
 
       // Force canvas re-render via resolution change to 720p-vertical and verify secretNote never hits canvas fillText!
+      await user.click(screen.getByTestId('open-settings-modal-button'));
       await user.selectOptions(
         screen.getByTestId('scene-resolution-select'),
         '720p-vertical',
       );
+      await user.click(screen.getByTestId('close-settings-modal-button'));
       expect(canvasFillTextCalls).not.toContain(secretNote);
 
       // Delete Take #1 -> verify Vault removes it
@@ -479,6 +482,7 @@ describe('Tasks 16–19 Vertical Shorts, IndexedDB Take Vault, Eye-Line Teleprom
         'aria-pressed',
         'true',
       );
+      await user.click(screen.getByTestId('open-settings-modal-button'));
       expect(
         screen.getByTestId<HTMLSelectElement>('scene-resolution-select').value,
       ).toBe('720p-vertical');

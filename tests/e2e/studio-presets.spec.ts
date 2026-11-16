@@ -38,10 +38,11 @@ test.describe('ReactStage — Task 8 Local Persistence & Creator Presets E2E', (
     await installPermissionCallCounter(page);
     await page.goto('./');
     await expect(
-      page.getByTestId('open-presets-modal-button'),
+      page.getByTestId('open-settings-modal-button'),
     ).toBeVisible();
 
-    // 1. Open Creator Presets dialog & run WCAG 2.1 AA axe-core check while open
+    // 1. Open Settings -> Creator Presets dialog & run WCAG 2.1 AA axe-core check while open
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('open-presets-modal-button').click();
     await expect(page.getByTestId('studio-presets-modal')).toBeVisible();
 
@@ -57,6 +58,7 @@ test.describe('ReactStage — Task 8 Local Persistence & Creator Presets E2E', (
 
     // Switch layout to Side-by-Side Split and save custom preset "Podcast Split 1080p"
     await page.getByTestId('layout-mode-side-by-side').click();
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('open-presets-modal-button').click();
     await page.getByTestId('preset-name-input').fill('Podcast Split 1080p');
     await page.getByTestId('save-custom-preset-button').click();
@@ -66,7 +68,7 @@ test.describe('ReactStage — Task 8 Local Persistence & Creator Presets E2E', (
     // 3. Reload the browser page -> verify workspace & custom preset persist with 0 media calls!
     await page.reload();
     await expect(
-      page.getByTestId('open-presets-modal-button'),
+      page.getByTestId('open-settings-modal-button'),
     ).toBeVisible();
 
     const mediaCounts = await page.evaluate(() =>
@@ -82,18 +84,20 @@ test.describe('ReactStage — Task 8 Local Persistence & Creator Presets E2E', (
       'aria-pressed',
       'true',
     );
+    await expect(page.getByTestId('mixer-source-gain-value')).toHaveText('70%');
+    await expect(page.getByTestId('mixer-mic-gain-value')).toHaveText('120%');
+    await page.getByTestId('open-settings-modal-button').click();
     await expect(page.getByTestId('scene-resolution-select')).toHaveValue(
       '1080p',
     );
-    await expect(page.getByTestId('mixer-source-gain-value')).toHaveText('70%');
-    await expect(page.getByTestId('mixer-mic-gain-value')).toHaveText('120%');
     await expect(page.getByTestId('preroll-countdown-toggle')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
     await expect(page.getByTestId('header-presets-count')).toHaveText('1');
+    await page.getByTestId('close-settings-modal-button').click();
 
-    // 4. Verify zero horizontal overflow across 375/768/1280/1440 with new header Presets button
+    // 4. Verify zero horizontal overflow across 375/768/1280/1440
     for (const vp of [
       { width: 375, height: 812 },
       { width: 768, height: 1024 },
@@ -111,11 +115,14 @@ test.describe('ReactStage — Task 8 Local Persistence & Creator Presets E2E', (
 
     // 5. Reset defaults cleanly
     await page.setViewportSize({ width: 1280, height: 800 });
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('open-presets-modal-button').click();
     await page.getByTestId('reset-studio-defaults-button').click();
     await expect(
       page.getByTestId('workspace-persistence-badge'),
     ).toHaveText('Factory Default');
+    await page.getByTestId('close-presets-modal-button').click();
+    await page.getByTestId('open-settings-modal-button').click();
     await expect(page.getByTestId('scene-resolution-select')).toHaveValue(
       '720p',
     );

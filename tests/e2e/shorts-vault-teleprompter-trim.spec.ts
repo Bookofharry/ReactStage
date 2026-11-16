@@ -47,12 +47,14 @@ test.describe('ReactStage — Tasks 16–19 Vertical Shorts, IndexedDB Vault, Te
     });
 
     await page.goto('./');
+    await page.getByTestId('open-settings-modal-button').click();
     await expect(page.getByTestId('scene-resolution-select')).toBeVisible();
 
     // 1. Switch to 720x1280 (9:16 Shorts) resolution and press hotkey '5' for Top / Bottom layout
     await page
       .getByTestId('scene-resolution-select')
       .selectOption('720p-vertical');
+    await page.getByTestId('close-settings-modal-button').click();
     await page.keyboard.press('5');
     await expect(page.getByTestId('layout-mode-top-bottom')).toHaveAttribute(
       'aria-pressed',

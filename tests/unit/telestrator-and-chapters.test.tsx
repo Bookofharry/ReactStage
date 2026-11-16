@@ -212,8 +212,8 @@ describe('Tasks 9 & 10: Stage Telestrator, PIP Framing & Recording Chapter Marke
     fireEvent.keyDown(window, { key: 'c', code: 'KeyC' });
     expect(screen.getByTestId('telestrator-clear-button')).toBeDisabled();
 
-    // Select Circle PIP shape + Gold Border and verify persistence across remount
-    await user.click(screen.getByTestId('toggle-layout-customize-button'));
+    // Select Circle PIP shape + Gold Border inside Settings modal and verify persistence across remount
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await user.click(screen.getByTestId('pip-shape-circle'));
     await user.selectOptions(screen.getByTestId('pip-border-select'), 'amber');
 
@@ -225,7 +225,7 @@ describe('Tasks 9 & 10: Stage Telestrator, PIP Framing & Recording Chapter Marke
       </StrictMode>,
     );
 
-    await user.click(screen.getByTestId('toggle-layout-customize-button'));
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await waitFor(() => {
       expect(screen.getByTestId('pip-shape-circle')).toHaveAttribute(
         'aria-pressed',

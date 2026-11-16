@@ -58,7 +58,7 @@ export function StudioWorkspaceDrawer() {
   return (
     <div
       data-testid="studio-workspace-drawer"
-      className="flex min-w-0 flex-col rounded-2xl border border-white/[0.08] bg-slate-900/75 p-2.5 shadow-2xl shadow-black/35 backdrop-blur-md sm:p-3.5"
+      className="flex min-w-0 flex-col rounded-2xl border border-slate-800/80 bg-slate-900/55 p-2.5 sm:p-3"
     >
       {/* Always-visible Browser Autoplay Audio Prompt if suspended */}
       {mixerState.requiresUserGesture && (
@@ -86,11 +86,11 @@ export function StudioWorkspaceDrawer() {
         </div>
       )}
 
-      {/* Segmented 3-Tab Switcher */}
+      {/* Mild Segmented 3-Tab Switcher */}
       <div
         role="tablist"
         aria-label="Studio workspace panels"
-        className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.07] bg-slate-950/85 p-1"
+        className="grid grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950/80 p-1"
       >
         {tabs.map((tab) => {
           const selected = activeTab === tab.id;
@@ -106,26 +106,26 @@ export function StudioWorkspaceDrawer() {
               onClick={() => setActiveTab(tab.id)}
               className={
                 selected
-                  ? 'inline-flex min-h-10 flex-wrap items-center justify-center gap-1 rounded-lg bg-sky-400 px-1.5 py-1.5 text-[11px] font-semibold text-slate-950 shadow-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 min-[375px]:gap-1.5 min-[375px]:px-2 min-[375px]:text-xs'
-                  : 'inline-flex min-h-10 flex-wrap items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white active:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 min-[375px]:gap-1.5 min-[375px]:px-2 min-[375px]:text-xs'
+                  ? 'inline-flex min-h-9 flex-wrap items-center justify-center gap-1 rounded-lg bg-slate-800 px-1.5 py-1.5 text-[11px] font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 min-[375px]:gap-1.5 min-[375px]:px-2 min-[375px]:text-xs'
+                  : 'inline-flex min-h-9 flex-wrap items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 min-[375px]:gap-1.5 min-[375px]:px-2 min-[375px]:text-xs'
               }
             >
               {tab.id === 'devices' && (
-                <VideoCameraIcon className="hidden h-3.5 w-3.5 shrink-0 min-[400px]:block" />
+                <VideoCameraIcon className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 min-[400px]:block" />
               )}
               {tab.id === 'audio' && (
-                <AudioMixerIcon className="hidden h-3.5 w-3.5 shrink-0 min-[400px]:block" />
+                <AudioMixerIcon className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 min-[400px]:block" />
               )}
               {tab.id === 'takes' && (
-                <DownloadIcon className="hidden h-3.5 w-3.5 shrink-0 min-[400px]:block" />
+                <DownloadIcon className="hidden h-3.5 w-3.5 shrink-0 text-slate-300 min-[400px]:block" />
               )}
               <span>{tab.label}</span>
               {tab.badge && (
                 <span
                   className={
                     selected
-                      ? 'rounded-full bg-slate-950/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-950 tabular-nums'
-                      : 'rounded-full border border-white/10 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sky-300 tabular-nums'
+                      ? 'rounded-full bg-sky-400/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sky-200 tabular-nums'
+                      : 'rounded-full bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-300 tabular-nums'
                   }
                 >
                   {tab.badge}

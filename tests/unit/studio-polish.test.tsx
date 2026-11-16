@@ -101,11 +101,13 @@ describe('Task 7 Studio Polish: Pre-Roll Countdown, Global Shortcuts & Multi-Tak
       </StrictMode>,
     );
 
-    // Toggle 3s Pre-Roll ON
+    // Toggle 3s Pre-Roll ON inside Settings & Tools modal
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     const preRollToggle = screen.getByTestId('preroll-countdown-toggle');
     expect(preRollToggle).toHaveAttribute('aria-pressed', 'false');
     await user.click(preRollToggle);
     expect(preRollToggle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByTestId('close-settings-modal-button'));
 
     // Start countdown -> Escape cancels before MediaRecorder starts
     await user.click(screen.getByTestId('start-recording-button'));
@@ -163,10 +165,12 @@ describe('Task 7 Studio Polish: Pre-Roll Countdown, Global Shortcuts & Multi-Tak
     );
 
     fireEvent.keyDown(window, { key: '3' });
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     expect(screen.getByTestId('layout-mode-source-only')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    await user.click(screen.getByTestId('close-settings-modal-button'));
 
     fireEvent.keyDown(window, { key: '1' });
     expect(screen.getByTestId('layout-mode-pip')).toHaveAttribute(

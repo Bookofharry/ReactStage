@@ -180,13 +180,11 @@ function createSyntheticWorkspaceHarness() {
     captureManager,
     levelMeter,
     recordingEngine,
-    camStopSpy,
-    micStopSpy,
   };
 }
 
-describe('Task 21 Creator UX: 3-Step Onboarding, Unified Dock & Tabbed Workspace Drawer', () => {
-  it('supports 1-click onboarding & dock device toggles, progressive disclosures, and auto-focuses Takes tab after recording', async () => {
+describe('Creator Mild UX: Calm Stage, Settings Modal & Slim Side Panel', () => {
+  it('keeps only simple PIP/Split/Shorts visible on stage, packs extra tools into Settings modal, and auto-focuses Takes after recording', async () => {
     const user = userEvent.setup();
     const { captureManager, levelMeter, recordingEngine } =
       createSyntheticWorkspaceHarness();
@@ -201,50 +199,58 @@ describe('Task 21 Creator UX: 3-Step Onboarding, Unified Dock & Tabbed Workspace
       </StrictMode>,
     );
 
-    // 1. 3-step onboarding checklist visible on clean stage; progressive disclosures collapsed by default
+    // 1. Calm welcome prompt visible; extra tools packed away inside Settings modal
     expect(screen.getByTestId('stage-onboarding-checklist')).toBeInTheDocument();
+    expect(screen.getByTestId('layout-mode-pip')).toBeInTheDocument();
+    expect(screen.getByTestId('layout-mode-side-by-side')).toBeInTheDocument();
+    expect(screen.getByTestId('layout-mode-top-bottom')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('studio-settings-modal'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('layout-mode-source-only'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByTestId('pip-controls-bar')).not.toBeInTheDocument();
     expect(screen.queryByTestId('telestrator-toolbar')).not.toBeInTheDocument();
 
-    // Workspace drawer starts on Devices tab
+    // Slim side panel starts on Devices tab
     const devicesTab = screen.getByTestId('workspace-tab-devices');
     const audioTab = screen.getByTestId('workspace-tab-audio');
     const takesTab = screen.getByTestId('workspace-tab-takes');
     expect(devicesTab).toHaveAttribute('aria-selected', 'true');
-    expect(audioTab).toHaveAttribute('aria-selected', 'false');
-    expect(takesTab).toHaveAttribute('aria-selected', 'false');
 
-    // 2. 1-click mic toggle on onboarding checklist syncs with bottom dock
-    await user.click(screen.getByTestId('onboarding-mic-button'));
+    // 2. Bottom record bar 1-click toggles turn camera & mic on/off cleanly
+    await user.click(screen.getByTestId('dock-mic-button'));
     expect(screen.getByTestId('dock-mic-button')).toHaveTextContent('Mic On');
     expect(devicesTab).toHaveTextContent('1 On');
 
-    // 1-click camera button on onboarding checklist activates camera & clears empty stage checklist
-    await user.click(screen.getByTestId('onboarding-camera-button'));
+    await user.click(screen.getByTestId('dock-camera-button'));
     expect(
       screen.queryByTestId('stage-onboarding-checklist'),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('dock-camera-button')).toHaveTextContent('Cam On');
     expect(devicesTab).toHaveTextContent('2 On');
 
-    // Bottom dock 1-click toggles turn devices off and back on cleanly
-    await user.click(screen.getByTestId('dock-camera-button'));
-    expect(screen.getByTestId('dock-camera-button')).toHaveTextContent('Cam Off');
-    await user.click(screen.getByTestId('dock-camera-button'));
-    expect(screen.getByTestId('dock-camera-button')).toHaveTextContent('Cam On');
-
-    // 3. Progressive disclosure toggles reveal Customize PIP, Draw tools, and Audio channel meters on demand
-    await user.click(screen.getByTestId('toggle-layout-customize-button'));
+    // 3. Settings & Tools modal opens cleanly and launches Draw toolbar on demand
+    await user.click(screen.getByTestId('open-settings-modal-button'));
+    expect(screen.getByTestId('studio-settings-modal')).toBeInTheDocument();
     expect(screen.getByTestId('pip-controls-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('scene-resolution-select')).toBeInTheDocument();
+    expect(screen.getByTestId('layout-mode-source-only')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('toggle-draw-tools-button'));
+    expect(
+      screen.queryByTestId('studio-settings-modal'),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId('telestrator-toolbar')).toBeInTheDocument();
 
+    await user.click(screen.getByTestId('close-draw-toolbar-button'));
+    expect(screen.queryByTestId('telestrator-toolbar')).not.toBeInTheDocument();
+
+    // Audio channel meters expand on demand
     await user.click(audioTab);
     expect(audioTab).toHaveAttribute('aria-selected', 'true');
-    expect(
-      screen.queryByTestId('mixer-source-meter'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mixer-source-meter')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('toggle-audio-meters-button'));
     expect(screen.getByTestId('mixer-source-meter')).toBeInTheDocument();
 

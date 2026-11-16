@@ -195,8 +195,10 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     expect(heldBgSig2).toBe(heldBgSig1);
     await expect(page.getByTestId('camera-status-badge')).toHaveText('Live');
 
-    // Switch to Webcam Only and verify CSS Mirror Preview never flips canvas pixels
+    // Switch to Webcam Only inside Settings modal and verify CSS Mirror Preview never flips canvas pixels
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('layout-mode-camera-only').click();
+    await page.getByTestId('close-settings-modal-button').click();
     await expect
       .poll(async () => {
         const rightPx = await sampleCanvasPixel(page, 960, 360);
@@ -232,7 +234,9 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     await expect(page.getByText('360×640')).toBeVisible();
 
     // Wait for initial decoded frame on source-only mode
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('layout-mode-source-only').click();
+    await page.getByTestId('close-settings-modal-button').click();
     await expect
       .poll(async () => {
         const centerPx = await sampleCanvasPixel(page, 640, 360);
@@ -249,7 +253,9 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     expect(rightBar.b).toBeLessThan(40);
 
     // Switch output resolution to 1920x1080 (1080p)
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('scene-resolution-select').selectOption('1080p');
+    await page.getByTestId('close-settings-modal-button').click();
     const dims = await page
       .getByTestId('scene-compositor-canvas')
       .evaluate((el: HTMLCanvasElement) => ({
@@ -264,27 +270,29 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     // Start camera and test PIP keyboard + pointer controls
     await page.getByTestId('camera-toggle-button').click();
     await page.getByTestId('layout-mode-pip').click();
-    await page.getByTestId('toggle-layout-customize-button').click();
-
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('pip-corner-top-left').click();
     await expect(page.getByTestId('pip-metrics-readout')).toContainText(
       'X:3% Y:3%',
     );
+    await page.getByTestId('close-settings-modal-button').click();
 
     const pipDrag = page.getByTestId('pip-drag-handle');
     await pipDrag.focus();
     await page.keyboard.press('Shift+ArrowRight');
-    await expect(page.getByTestId('pip-metrics-readout')).toContainText('X:8%');
 
+    await page.getByTestId('open-settings-modal-button').click();
+    await expect(page.getByTestId('pip-metrics-readout')).toContainText('X:8%');
     await page.getByTestId('pip-size-slider').fill('0.4');
     await expect(page.getByTestId('pip-metrics-readout')).toContainText('40%');
 
     // Switch to Side-by-Side split layout at 40% split ratio on 1920x1080
-    await page.getByTestId('layout-mode-side-by-side').click();
+    await page.getByTestId('modal-layout-mode-side-by-side').click();
     await page.getByTestId('split-ratio-slider').fill('0.4');
     await expect(page.getByTestId('split-ratio-readout')).toHaveText(
       '40% Source / 60% Webcam',
     );
+    await page.getByTestId('close-settings-modal-button').click();
 
     // Left pane center (x=384, y=540) shows cyan portrait source; right pane (x=1750, y=540) shows blue camera right-half
     await expect
@@ -322,7 +330,13 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
       'source-only',
       'camera-only',
     ] as const) {
-      await page.getByTestId(`layout-mode-${mode}`).click();
+      if (mode === 'source-only' || mode === 'camera-only') {
+        await page.getByTestId('open-settings-modal-button').click();
+        await page.getByTestId(`layout-mode-${mode}`).click();
+        await page.getByTestId('close-settings-modal-button').click();
+      } else {
+        await page.getByTestId(`layout-mode-${mode}`).click();
+      }
 
       for (const vp of viewports) {
         await page.setViewportSize(vp);
@@ -342,7 +356,9 @@ test.describe('ReactStage — Task 3 Live Scene Compositor E2E', () => {
     }
 
     // Also audit WCAG 2.1 AA when scene render loop is paused
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('scene-loop-toggle-button').click();
+    await page.getByTestId('close-settings-modal-button').click();
     await expect(page.getByTestId('scene-status-badge')).toHaveText(
       'Scene Paused',
     );

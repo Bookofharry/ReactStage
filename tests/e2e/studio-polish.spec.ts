@@ -65,7 +65,7 @@ test.describe('ReactStage — Task 7 Studio Polish E2E', () => {
     await installStudioAuditor(page);
     await page.goto('./');
     await expect(
-      page.getByTestId('open-shortcuts-modal-button'),
+      page.getByTestId('open-settings-modal-button'),
     ).toBeVisible();
 
     // 1. Open Shortcuts modal via '?' (Shift+Slash) key and run WCAG 2.1 AA audit while modal is open

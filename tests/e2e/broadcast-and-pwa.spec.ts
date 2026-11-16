@@ -51,8 +51,10 @@ test.describe('ReactStage — Tasks 11–14 Broadcast Suite & Offline PWA E2E', 
     );
     await expect(page.getByTestId('seek-slider')).toBeDisabled();
 
-    // Switch to Source-Only layout and confirm composed stage canvas draws live screen pixels
+    // Switch to Source-Only layout inside Settings & Tools modal and confirm composed stage canvas draws live screen pixels
+    await page.getByTestId('open-settings-modal-button').click();
     await page.getByTestId('layout-mode-source-only').click();
+    await page.getByTestId('close-settings-modal-button').click();
     await expect
       .poll(async () => {
         return page.evaluate(() => {
@@ -108,9 +110,11 @@ test.describe('ReactStage — Tasks 11–14 Broadcast Suite & Offline PWA E2E', 
     ).toHaveAttribute('aria-pressed', 'true');
 
     // 4. Export instant PNG thumbnail snapshot & verify real PNG magic header
+    await page.getByTestId('open-settings-modal-button').click();
     const downloadPromise = page.waitForEvent('download');
     await page.getByTestId('capture-snapshot-button').click();
     const download = await downloadPromise;
+    await page.getByTestId('close-settings-modal-button').click();
     expect(download.suggestedFilename()).toMatch(
       /^reactstage-[a-z0-9-]+-\d{8}-\d{6}\.png$/,
     );

@@ -317,3 +317,15 @@
   2. Surface a **3-Step Quick-Start Onboarding Checklist** (`stage-onboarding-checklist`: `1. Add a video or share your screen`, `2. Check camera & mic` with inline 1-click toggles, `3. Press Start Recording below`) on an empty stage, and add 1-click `Cam On/Off` (`dock-camera-button`) and `Mic On/Off` (`dock-mic-button`) pills directly inside the bottom recording dock.
   3. Apply **Progressive Disclosure** so essentials remain 1-click up front while power-user controls (`Customize` PIP/Split framing, `Draw` Telestrator ink tools, per-channel VU meters in `Audio`, and `Trim Clip & Save Audio (.wav)` in `Takes`) expand cleanly on demand, styled with dark-glass surfaces (`border-white/[0.08] bg-slate-900/75 backdrop-blur-md`) and human-friendly creator copy across all 15 verified viewports (`320px`–`1920px`).
 - **Consequences**: Dramatically calmer visual hierarchy, faster zero-scroll recording ergonomics, automatic post-take focus on preview/download, zero WCAG 2.1 AA regressions, and full responsive integrity from `320px` phones to `1920px` widescreens.
+
+---
+
+## ADR-030: Mild & Easy Studio Simplification — Packing Extra Tools Into `StudioSettingsModal` (`v1.5.0`)
+- **Status**: Accepted (Task 22 — Release v1.5.0)
+- **Context**:
+  1. Even with a 3-tab drawer, showing 25+ controls, dual header clocks, technical resolution/FPS badges, 9 stage buttons, pre-roll toggles, and large empty webcam placeholder boxes simultaneously still felt visually busy to everyday users.
+  2. Users wanted a mild, effortless main screen keeping only `PIP` / `Split` / `Shorts` layout pills, a calm always-visible Video Player bar, a slim side panel, and a single modal button packing away extra tools and settings.
+- **Decision**:
+  1. Create `StudioSettingsModal` (`Settings & Extra Tools`, triggered via `open-settings-modal-button` in the fixed single-row navbar or `More Tools` on the stage) to house video format/resolution (`720p`/`1080p`/Shorts), extra layouts (`Video Only` / `Cam Only`), PIP/Split fine-tuning, `Draw on Video`, `Title Banner`, `Speaker Notes`, `Save PNG Frame`, `3-Second Count-In`, `Pause/Resume Stage`, `Saved Presets`, and `Keyboard Shortcuts`.
+  2. Simplify the stage bar to a single calm row (`PIP` · `Split` · `Shorts` + `More Tools`), replace the multi-box empty stage checklist with one gentle `"Add a video to react to"` card (`Choose Video` / `Share Screen`), hide idle telemetry clocks/badges visually (`sr-only` until active), soften button/tab surfaces so only primary actions stand out, and collapse idle camera/meter placeholders inside the slim `xl:col-span-3` side panel.
+- **Consequences**: Calm, low-cognitive-load studio experience on every device (`320px`–`1920px`) with 100% of power features neatly packed one click away inside `StudioSettingsModal`.

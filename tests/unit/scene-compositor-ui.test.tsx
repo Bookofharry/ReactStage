@@ -129,10 +129,12 @@ describe('SceneStagePanel UI, Accessibility Controls & StrictMode Lifecycle', ()
     );
 
     // 1. Resolution switching updates canvas output dimensions truthfully
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await user.selectOptions(
       screen.getByTestId('scene-resolution-select'),
       '1080p',
     );
+    await user.click(screen.getByTestId('close-settings-modal-button'));
     expect(canvas.width).toBe(1920);
     expect(canvas.height).toBe(1080);
     expect(screen.getByTestId('scene-dimensions-badge')).toHaveTextContent(
@@ -185,14 +187,14 @@ describe('SceneStagePanel UI, Accessibility Controls & StrictMode Lifecycle', ()
     expect(harness.compositor.getState().pipRect.x).toBeCloseTo(0.28, 2);
     expect(harness.compositor.getState().pipRect.y).toBeCloseTo(0.23, 2);
 
-    // Open layout customization bar, then Reset PIP restores default bottom-right bounds
-    await user.click(screen.getByTestId('toggle-layout-customize-button'));
+    // Open Settings & Tools modal, then Reset PIP restores default bottom-right bounds
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await user.click(screen.getByTestId('pip-reset-button'));
     expect(harness.compositor.getState().pipRect.x).toBe(0.69);
     expect(harness.compositor.getState().pipRect.width).toBe(0.28);
 
     // 4. Switch across Side-by-Side, Webcam Only, and Source Only modes
-    await user.click(screen.getByTestId('layout-mode-side-by-side'));
+    await user.click(screen.getByTestId('modal-layout-mode-side-by-side'));
     expect(harness.compositor.getState().layoutMode).toBe('side-by-side');
 
     const splitSlider = screen.getByTestId('split-ratio-slider');
@@ -246,6 +248,7 @@ describe('SceneStagePanel UI, Accessibility Controls & StrictMode Lifecycle', ()
     );
 
     // Pause scene render loop -> camera capture stays Live and source playback is unaffected
+    await user.click(screen.getByTestId('open-settings-modal-button'));
     await user.click(screen.getByTestId('scene-loop-toggle-button'));
     expect(harness.compositor.getState().isRunning).toBe(false);
     expect(screen.getByTestId('scene-status-badge')).toHaveTextContent(
@@ -256,6 +259,7 @@ describe('SceneStagePanel UI, Accessibility Controls & StrictMode Lifecycle', ()
 
     // Resume scene render loop
     await user.click(screen.getByTestId('scene-loop-toggle-button'));
+    await user.click(screen.getByTestId('close-settings-modal-button'));
     expect(harness.compositor.getState().isRunning).toBe(true);
 
     // Preview mirror toggles CSS on self-check thumbnail ONLY; compositor's internal video stays unflipped

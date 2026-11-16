@@ -4,6 +4,7 @@ import { RecordingSessionPanel } from './components/RecordingSessionPanel';
 import { SceneStagePanel } from './components/SceneStagePanel';
 import { StudioHeader } from './components/StudioHeader';
 import { StudioPresetsModal } from './components/StudioPresetsModal';
+import { StudioSettingsModal } from './components/StudioSettingsModal';
 import { StudioWorkspaceDrawer } from './components/StudioWorkspaceDrawer';
 import type { MicrophoneLevelMeter } from './services/capture-manager';
 import type { AudioMixer } from './services/interfaces/audio-mixer';
@@ -71,41 +72,41 @@ export function App({
                     >
                       <StudioUiProvider>
                         <div className="relative flex min-h-dvh w-full flex-col overflow-x-clip bg-slate-950 text-slate-100">
-                          {/* Subtle atmospheric creator-studio radial glow */}
+                          {/* Soft, mild ambient studio glow */}
                           <div
                             aria-hidden="true"
-                            className="pointer-events-none fixed inset-x-0 top-0 h-[34rem] bg-[radial-gradient(ellipse_75%_55%_at_50%_-10%,rgba(56,189,248,0.11),transparent_70%)]"
+                            className="pointer-events-none fixed inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_50%_at_50%_-15%,rgba(56,189,248,0.06),transparent_70%)]"
                           />
 
                           <StudioHeader />
 
                           <main
                             id="studio-main"
-                            className="relative z-10 mx-auto w-full max-w-[96rem] flex-1 px-2.5 py-3 min-[375px]:px-3.5 sm:px-5 sm:py-5 lg:px-6 xl:px-8"
+                            className="relative z-10 mx-auto w-full max-w-[92rem] flex-1 px-2.5 py-3 min-[375px]:px-3.5 sm:px-5 sm:py-5 lg:px-6 xl:px-8"
                           >
-                            <div className="grid grid-cols-1 items-start gap-3.5 sm:gap-4 lg:grid-cols-12 lg:gap-5 xl:gap-6">
-                              {/* Primary Cinema Stage + Unified Bottom Control Dock */}
-                              <div className="flex min-w-0 flex-col gap-3 sm:gap-3.5 lg:col-span-8">
+                            <div className="grid grid-cols-1 items-start gap-3.5 sm:gap-4 lg:grid-cols-12 lg:gap-5">
+                              {/* Calm Stage + Simple Player + Record Bar */}
+                              <div className="flex min-w-0 flex-col gap-2.5 sm:gap-3 lg:col-span-8 xl:col-span-9">
                                 <SceneStagePanel />
                                 <PlaybackControls />
                                 <RecordingSessionPanel />
                               </div>
 
-                              {/* Tabbed Studio Inspector Drawer (Devices · Audio · Takes) */}
+                              {/* Slim Side Panel (Devices · Audio · Takes) */}
                               <aside
                                 aria-label="Studio setup, audio mix, and recorded takes"
-                                className="min-w-0 lg:col-span-4 lg:sticky lg:top-[calc(var(--studio-header-height,3.75rem)+1rem)]"
+                                className="min-w-0 lg:col-span-4 lg:sticky lg:top-[calc(var(--studio-header-height,3.75rem)+1rem)] xl:col-span-3"
                               >
                                 <StudioWorkspaceDrawer />
                               </aside>
                             </div>
                           </main>
 
-                          <footer className="relative z-10 border-t border-white/[0.06] bg-slate-950/80 px-3 py-3 text-center text-xs leading-relaxed text-slate-300 break-words sm:px-6 sm:py-3.5">
-                            ReactStage · Free &amp; Open-Source Creator Studio ·
-                            100% private on your device
+                          <footer className="relative z-10 border-t border-slate-900 bg-slate-950 px-3 py-3 text-center text-xs text-slate-400 break-words sm:px-6">
+                            ReactStage · Private &amp; local on your device
                           </footer>
 
+                          <StudioSettingsModal />
                           <StudioPresetsModal />
                           <KeyboardShortcutsModal />
                         </div>

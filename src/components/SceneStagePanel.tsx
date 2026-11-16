@@ -14,14 +14,7 @@ import type {
   StageAnnotation,
   StageAnnotationKind,
 } from '../services/interfaces/scene-compositor';
-import {
-  MAX_PIP_SIZE,
-  MAX_SPLIT_RATIO,
-  MIN_PIP_SIZE,
-  MIN_SPLIT_RATIO,
-  clampPipRect,
-  type PipCornerPreset,
-} from '../services/scene-compositor';
+import { clampPipRect } from '../services/scene-compositor';
 import { useCapture } from '../state/CaptureContext';
 import {
   useCompositorDiagnostics,
@@ -29,14 +22,11 @@ import {
 } from '../state/CompositorContext';
 import { useSourcePlayback } from '../state/PlaybackContext';
 import { useRecordingSession } from '../state/RecordingSessionContext';
+import { useStudioUi } from '../state/StudioUiContext';
 import {
   MAX_LOWER_THIRD_TEXT_LENGTH,
   MAX_TELEPROMPTER_SCRIPT_LENGTH,
-  SUPPORTED_SCENE_RESOLUTIONS,
   SUPPORTED_TELESTRATOR_COLORS,
-  type PipBorderStyle,
-  type PipFrameShape,
-  type SceneResolutionPreset,
   type StageLayoutMode,
   type TeleprompterFontSize,
   type TelestratorTool,
@@ -45,8 +35,6 @@ import { formatBytes } from '../utils/format';
 import {
   AlertIcon,
   ArrowPointerIcon,
-  CameraSnapshotIcon,
-  CheckCircleIcon,
   HighlightBoxIcon,
   LaserPointerIcon,
   LayoutCameraIcon,
@@ -54,18 +42,14 @@ import {
   LayoutSourceIcon,
   LayoutSplitIcon,
   LayoutVerticalStackIcon,
-  LowerThirdIcon,
-  MicrophoneIcon,
   MoveQuadArrowsIcon,
   PenToolIcon,
   ResizeCornerIcon,
   ScreenShareIcon,
   SlidersTuneIcon,
-  TeleprompterIcon,
   TrashIcon,
   UndoIcon,
   UploadVideoIcon,
-  VideoCameraIcon,
 } from './StudioIcons';
 
 interface ActivePointerGesture {
@@ -78,45 +62,13 @@ interface ActivePointerGesture {
   readonly initialRect: PipOverlayRect;
 }
 
-const LAYOUT_OPTIONS: readonly {
+const PRIMARY_LAYOUT_OPTIONS: readonly {
   readonly mode: StageLayoutMode;
   readonly label: string;
 }[] = [
   { mode: 'pip', label: 'PIP' },
   { mode: 'side-by-side', label: 'Split' },
   { mode: 'top-bottom', label: 'Shorts' },
-  { mode: 'source-only', label: 'Video Only' },
-  { mode: 'camera-only', label: 'Cam Only' },
-];
-
-const PIP_CORNER_OPTIONS: readonly {
-  readonly id: PipCornerPreset;
-  readonly label: string;
-}[] = [
-  { id: 'top-left', label: 'Top Left' },
-  { id: 'top-right', label: 'Top Right' },
-  { id: 'bottom-left', label: 'Bottom Left' },
-  { id: 'bottom-right', label: 'Bottom Right' },
-];
-
-const PIP_SHAPE_OPTIONS: readonly {
-  readonly id: PipFrameShape;
-  readonly label: string;
-}[] = [
-  { id: 'rect', label: 'Rect' },
-  { id: 'rounded', label: 'Rounded' },
-  { id: 'circle', label: 'Circle' },
-];
-
-const PIP_BORDER_OPTIONS: readonly {
-  readonly id: PipBorderStyle;
-  readonly label: string;
-}[] = [
-  { id: 'sky', label: 'Cyan Glow' },
-  { id: 'amber', label: 'Gold Glow' },
-  { id: 'emerald', label: 'Green Glow' },
-  { id: 'subtle', label: 'Subtle Frame' },
-  { id: 'none', label: 'No Frame' },
 ];
 
 const TELESTRATOR_TOOL_OPTIONS: readonly {
@@ -184,28 +136,11 @@ function SceneTelemetryBadges() {
       : diagnostics.targetFps;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span
-        data-testid="scene-status-badge"
-        className={
-          diagnostics.isRunning
-            ? 'inline-flex items-center gap-1.5 rounded-full border border-emerald-400/35 bg-emerald-400/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-300'
-            : 'inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300'
-        }
-      >
-        {diagnostics.isRunning && (
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-1.5 rounded-full bg-emerald-400"
-          />
-        )}
+    <div className="sr-only">
+      <span data-testid="scene-status-badge">
         {diagnostics.isRunning ? 'Scene Live' : 'Scene Paused'}
       </span>
-
-      <span
-        data-testid="scene-dimensions-badge"
-        className="rounded-full border border-white/[0.08] bg-slate-950/80 px-2 py-0.5 font-mono text-[11px] font-medium text-slate-200 tabular-nums"
-      >
+      <span data-testid="scene-dimensions-badge">
         {displayWidth}×{displayHeight} · {fpsValue} fps
       </span>
     </div>
@@ -278,13 +213,13 @@ export function SceneStagePanel() {
     startScreenShare,
     unload,
   } = useSourcePlayback();
-  const {
-    snapshot: captureSnapshot,
-    startCamera,
-    startMicrophone,
-    stopMicrophone,
-  } = useCapture();
+  const { snapshot: captureSnapshot } = useCapture();
   const { countdownSecondsRemaining } = useRecordingSession();
+  const {
+    openSettingsModal,
+    isDrawToolbarOpen,
+    setIsDrawToolbarOpen,
+  } = useStudioUi();
   const {
     state: compositorState,
     canvasRef,
@@ -293,28 +228,20 @@ export function SceneStagePanel() {
     setActiveTool,
     setActiveColor,
     setLayoutMode,
-    setResolution,
     setPipRect,
-    setPipFrameShape,
-    setPipBorderStyle,
     movePipBy,
     resizePipBy,
     snapPipToCorner,
-    resetPipRect,
-    setSplitRatio,
-    resetSplitRatio,
     setLowerThird,
     toggleLowerThird,
     teleprompter,
     setTeleprompter,
     toggleTeleprompter,
-    captureSnapshotPng,
     addAnnotation,
     undoAnnotation,
     clearAnnotations,
     setDraftAnnotation,
     pushLaserPoint,
-    toggleSceneLoop,
   } = useSceneCompositor();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -324,14 +251,10 @@ export function SceneStagePanel() {
   const activeGestureRef = useRef<ActivePointerGesture | null>(null);
   const activeStrokeRef = useRef<ActiveAnnotationStroke | null>(null);
   const strokeCounterRef = useRef(0);
-  const snapshotSavedTimerRef = useRef<number | null>(null);
 
   const [isDraggingFileOver, setIsDraggingFileOver] = useState(false);
   const [isInteractingPip, setIsInteractingPip] = useState(false);
-  const [snapshotJustSaved, setSnapshotJustSaved] = useState(false);
   const [isTeleprompterScrolling, setIsTeleprompterScrolling] = useState(false);
-  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
-  const [isDrawOpen, setIsDrawOpen] = useState(false);
 
   useEffect(() => {
     if (!teleprompter.enabled || !isTeleprompterScrolling) {
@@ -370,27 +293,6 @@ export function SceneStagePanel() {
     };
   }, [isTeleprompterScrolling, teleprompter.enabled, teleprompter.scrollSpeed]);
 
-  useEffect(() => {
-    return () => {
-      if (snapshotSavedTimerRef.current !== null) {
-        window.clearTimeout(snapshotSavedTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleCaptureSnapshot = useCallback(async () => {
-    const fileName = await captureSnapshotPng();
-    if (fileName) {
-      setSnapshotJustSaved(true);
-      if (snapshotSavedTimerRef.current !== null) {
-        window.clearTimeout(snapshotSavedTimerRef.current);
-      }
-      snapshotSavedTimerRef.current = window.setTimeout(() => {
-        setSnapshotJustSaved(false);
-      }, 1800);
-    }
-  }, [captureSnapshotPng]);
-
   const isSourcePlayable =
     playback.status === 'ready' ||
     playback.status === 'playing' ||
@@ -400,19 +302,13 @@ export function SceneStagePanel() {
   const isCameraActive =
     captureSnapshot.cameraStatus === 'active' &&
     captureSnapshot.activeCameraStream !== null;
-  const isMicActive =
-    captureSnapshot.microphoneStatus === 'active' &&
-    captureSnapshot.activeMicrophoneStream !== null;
-
-  const canCustomizeLayout =
-    compositorState.layoutMode === 'pip' ||
-    compositorState.layoutMode === 'side-by-side' ||
-    compositorState.layoutMode === 'top-bottom';
 
   const showDrawToolbar =
-    isDrawOpen || activeTool !== 'none' || compositorState.annotationCount > 0;
+    isDrawToolbarOpen ||
+    activeTool !== 'none' ||
+    compositorState.annotationCount > 0;
 
-  // Show centered onboarding checklist only when stage is completely clean and idle
+  // Show centered gentle welcome card only when stage is completely clean and idle
   const showCenteredEmptyPrompt =
     !showDrawToolbar &&
     !compositorState.lowerThird.enabled &&
@@ -426,17 +322,6 @@ export function SceneStagePanel() {
     showCenteredEmptyPrompt ||
     (playback.status === 'error' && Boolean(playback.error)) ||
     countdownSecondsRemaining !== null;
-
-  const handleToggleDrawTools = useCallback(() => {
-    if (showDrawToolbar) {
-      setIsDrawOpen(false);
-      if (activeTool !== 'none') {
-        setActiveTool('none');
-      }
-    } else {
-      setIsDrawOpen(true);
-    }
-  }, [activeTool, setActiveTool, showDrawToolbar]);
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();
@@ -494,41 +379,6 @@ export function SceneStagePanel() {
       }
     },
     [loadFile],
-  );
-
-  const handleResolutionChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setResolution(event.currentTarget.value as SceneResolutionPreset);
-    },
-    [setResolution],
-  );
-
-  const handlePipSizeSliderChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const nextSize = Number(event.currentTarget.value);
-      setPipRect(
-        clampPipRect({
-          ...compositorState.pipRect,
-          width: nextSize,
-          height: nextSize,
-        }),
-      );
-    },
-    [compositorState.pipRect, setPipRect],
-  );
-
-  const handleSplitSliderChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setSplitRatio(Number(event.currentTarget.value));
-    },
-    [setSplitRatio],
-  );
-
-  const handlePipBorderChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setPipBorderStyle(event.currentTarget.value as PipBorderStyle);
-    },
-    [setPipBorderStyle],
   );
 
   const resolveCanvasNormalizedPoint = useCallback(
@@ -825,18 +675,17 @@ export function SceneStagePanel() {
     [resizePipBy],
   );
 
-  const pipXPercent = Math.round(compositorState.pipRect.x * 100);
-  const pipYPercent = Math.round(compositorState.pipRect.y * 100);
-  const pipSizePercent = Math.round(compositorState.pipRect.width * 100);
-  const splitLeftPercent = Math.round(compositorState.splitRatio * 100);
-  const splitRightPercent = 100 - splitLeftPercent;
-
   return (
     <section
       data-testid="scene-stage-panel"
       aria-labelledby="scene-stage-heading"
-      className="flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900/75 shadow-2xl shadow-black/40 backdrop-blur-md"
+      className="flex flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/60 shadow-lg shadow-black/25"
     >
+      <h2 id="scene-stage-heading" className="sr-only">
+        Live Scene Stage
+      </h2>
+      <SceneTelemetryBadges />
+
       <input
         id="source-video-file-input"
         ref={fileInputRef}
@@ -848,81 +697,14 @@ export function SceneStagePanel() {
         onChange={handleFileInputChange}
       />
 
-      {/* Clean Cinema Stage Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-2.5 py-2.5 min-[375px]:px-3.5 sm:px-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h2
-            id="scene-stage-heading"
-            className="text-sm font-semibold text-white"
-          >
-            Live Scene Stage
-          </h2>
-          <SceneTelemetryBadges />
-        </div>
-
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
-          <div className="flex min-h-9 min-w-0 max-w-full items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-950/85 px-2.5 py-1">
-            <label
-              htmlFor="scene-resolution-select"
-              className="shrink-0 text-xs font-medium text-slate-300"
-            >
-              Format
-            </label>
-            <select
-              id="scene-resolution-select"
-              data-testid="scene-resolution-select"
-              value={compositorState.resolutionPreset}
-              onChange={handleResolutionChange}
-              className="min-w-0 max-w-full rounded bg-slate-900 px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-            >
-              {SUPPORTED_SCENE_RESOLUTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            data-testid="capture-snapshot-button"
-            onClick={() => {
-              void handleCaptureSnapshot();
-            }}
-            className={
-              snapshotJustSaved
-                ? 'inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-emerald-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                : 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/10 bg-slate-950/80 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-            }
-          >
-            <CameraSnapshotIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-            <span>{snapshotJustSaved ? 'Saved' : 'Snapshot'}</span>
-          </button>
-
-          <button
-            type="button"
-            data-testid="scene-loop-toggle-button"
-            aria-pressed={!compositorState.isRunning}
-            onClick={toggleSceneLoop}
-            className={
-              compositorState.isRunning
-                ? 'min-h-9 rounded-xl border border-white/10 bg-slate-950/80 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-                : 'min-h-9 rounded-xl bg-emerald-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 active:bg-emerald-500'
-            }
-          >
-            {compositorState.isRunning ? 'Pause Stage' : 'Resume Stage'}
-          </button>
-        </div>
-      </div>
-
-      {/* Unified Layout & Creative Tools Ribbon (Simple by default; expands on demand) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] bg-slate-950/60 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4">
+      {/* Calm Single-Row Stage Bar: Only PIP / Split / Shorts + More Tools */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4">
         <div
           role="group"
           aria-label="Scene layout mode"
-          className="flex flex-wrap items-center gap-1.5"
+          className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/80 p-1"
         >
-          {LAYOUT_OPTIONS.map((item) => {
+          {PRIMARY_LAYOUT_OPTIONS.map((item) => {
             const isSelected = compositorState.layoutMode === item.mode;
             return (
               <button
@@ -933,8 +715,8 @@ export function SceneStagePanel() {
                 onClick={() => setLayoutMode(item.mode)}
                 className={
                   isSelected
-                    ? 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-sky-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                    : 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-900/90 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
+                    ? 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-sky-400/35 bg-sky-400/15 px-3 py-1 text-xs font-semibold text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
+                    : 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-slate-800/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400'
                 }
               >
                 {renderLayoutIcon(item.mode)}
@@ -942,77 +724,25 @@ export function SceneStagePanel() {
               </button>
             );
           })}
-        </div>
 
-        {/* Progressive Disclosure Toggles: Customize Frame · Draw · Title · Prompter */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {canCustomizeLayout && (
-            <button
-              type="button"
-              data-testid="toggle-layout-customize-button"
-              aria-pressed={isCustomizeOpen}
-              onClick={() => setIsCustomizeOpen((prev) => !prev)}
-              className={
-                isCustomizeOpen
-                  ? 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-sky-400/50 bg-sky-400/15 px-2.5 py-1.5 text-xs font-semibold text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                  : 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-900/90 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-              }
-            >
-              <SlidersTuneIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-              <span>Customize</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            data-testid="toggle-draw-tools-button"
-            aria-pressed={showDrawToolbar}
-            onClick={handleToggleDrawTools}
-            className={
-              showDrawToolbar
-                ? 'inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-sky-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                : 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-900/90 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-            }
-          >
-            <PenToolIcon className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              Draw
-              {compositorState.annotationCount > 0
-                ? ` (${String(compositorState.annotationCount)})`
-                : ''}
+          {(compositorState.layoutMode === 'source-only' ||
+            compositorState.layoutMode === 'camera-only') && (
+            <span className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-sky-400/30 bg-sky-400/10 px-2.5 py-1 text-xs font-medium text-sky-200">
+              {renderLayoutIcon(compositorState.layoutMode)}
+              <span>{getLayoutDisplayName(compositorState.layoutMode)}</span>
             </span>
-          </button>
-
-          <button
-            type="button"
-            data-testid="lower-third-toggle-button"
-            aria-pressed={compositorState.lowerThird.enabled}
-            onClick={toggleLowerThird}
-            className={
-              compositorState.lowerThird.enabled
-                ? 'inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-sky-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                : 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-900/90 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-            }
-          >
-            <LowerThirdIcon className="h-3.5 w-3.5 shrink-0" />
-            <span>Title</span>
-          </button>
-
-          <button
-            type="button"
-            data-testid="teleprompter-toggle-button"
-            aria-pressed={teleprompter.enabled}
-            onClick={toggleTeleprompter}
-            className={
-              teleprompter.enabled
-                ? 'inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-sky-400 px-2.5 py-1.5 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300'
-                : 'inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-slate-900/90 px-2.5 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-            }
-          >
-            <TeleprompterIcon className="h-3.5 w-3.5 shrink-0" />
-            <span>Prompter</span>
-          </button>
+          )}
         </div>
+
+        <button
+          type="button"
+          data-testid="open-stage-tools-button"
+          onClick={openSettingsModal}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+        >
+          <SlidersTuneIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+          <span>More Tools</span>
+        </button>
       </div>
 
       {/* Expandable On-Stage Drawing & Laser Palette */}
@@ -1111,7 +841,7 @@ export function SceneStagePanel() {
               data-testid="telestrator-clear-button"
               disabled={compositorState.annotationCount === 0}
               onClick={clearAnnotations}
-              className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:border-rose-400/40 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 active:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-8"
+              className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-200 hover:border-rose-400/40 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-8"
             >
               <TrashIcon className="h-3 w-3 shrink-0" />
               <span>
@@ -1121,6 +851,18 @@ export function SceneStagePanel() {
                   : ''}
               </span>
             </button>
+
+            <button
+              type="button"
+              data-testid="close-draw-toolbar-button"
+              onClick={() => {
+                setActiveTool('none');
+                setIsDrawToolbarOpen(false);
+              }}
+              className="inline-flex min-h-9 items-center rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 sm:min-h-8"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
@@ -1129,9 +871,9 @@ export function SceneStagePanel() {
       {compositorState.lowerThird.enabled && (
         <div
           data-testid="lower-third-controls-bar"
-          className="grid grid-cols-1 gap-2 border-b border-white/[0.07] bg-slate-950/80 px-2.5 py-2.5 min-[375px]:px-3.5 sm:grid-cols-2 sm:px-4"
+          className="flex flex-wrap items-center gap-2 border-b border-slate-800/80 bg-slate-950/80 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4"
         >
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-[10rem] flex-1 items-center gap-2">
             <label
               htmlFor="lower-third-title-input"
               className="shrink-0 text-xs font-medium text-slate-300"
@@ -1148,11 +890,11 @@ export function SceneStagePanel() {
                 setLowerThird({ title: event.currentTarget.value });
               }}
               placeholder="Your name or episode title"
-              className="min-h-9 min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+              className="min-h-9 min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
             />
           </div>
 
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-[10rem] flex-1 items-center gap-2">
             <label
               htmlFor="lower-third-subtitle-input"
               className="shrink-0 text-xs font-medium text-slate-300"
@@ -1168,10 +910,18 @@ export function SceneStagePanel() {
               onChange={(event) => {
                 setLowerThird({ subtitle: event.currentTarget.value });
               }}
-              placeholder="Channel handle, topic, or chapter"
-              className="min-h-9 min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+              placeholder="Channel handle or topic"
+              className="min-h-9 min-w-0 flex-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={toggleLowerThird}
+            className="min-h-9 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400"
+          >
+            Hide
+          </button>
         </div>
       )}
 
@@ -1270,6 +1020,14 @@ export function SceneStagePanel() {
                   <option value="lg">Large</option>
                 </select>
               </div>
+
+              <button
+                type="button"
+                onClick={toggleTeleprompter}
+                className="min-h-9 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 sm:min-h-8"
+              >
+                Hide
+              </button>
             </div>
           </div>
 
@@ -1475,122 +1233,43 @@ export function SceneStagePanel() {
               </div>
             )}
 
-          {/* Friendly 3-Step Quick-Start Creator Onboarding Card */}
+          {/* Calm, Mild Empty-Stage Welcome Prompt */}
           {showCenteredEmptyPrompt && (
             <div
               data-testid="stage-onboarding-checklist"
-              className="relative z-20 mx-2.5 flex w-full max-w-lg flex-col rounded-2xl border border-white/10 bg-slate-900/92 p-3.5 text-left shadow-2xl backdrop-blur-md sm:mx-4 sm:p-5"
+              className="relative z-20 mx-3 flex w-full max-w-sm flex-col items-center rounded-2xl border border-slate-800/90 bg-slate-900/90 px-4 py-5 text-center shadow-xl sm:px-6 sm:py-6"
             >
-              <div className="flex items-start justify-between gap-2.5">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-white sm:text-base">
-                    Create a reaction video in 3 easy steps
-                  </h3>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-300">
-                    Drop a video here or follow the quick checklist below —
-                    everything stays on your device.
-                  </p>
-                </div>
-                <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-400/35 bg-sky-400/10 text-sky-300 sm:flex">
-                  <UploadVideoIcon className="h-4 w-4" />
-                </span>
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 text-sky-300">
+                <UploadVideoIcon className="h-5 w-5" />
+              </span>
+              <h3 className="text-sm font-semibold text-white sm:text-base">
+                Add a video to react to
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-300">
+                Plays privately on your device — nothing is uploaded.
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  data-testid="select-video-button"
+                  onClick={openFilePicker}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-sky-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:bg-sky-500"
+                >
+                  <span>Choose Video</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="share-screen-button"
+                  onClick={() => {
+                    void startScreenShare();
+                  }}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                >
+                  <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
+                  <span>Share Screen</span>
+                </button>
               </div>
-
-              <ol className="mt-3 flex flex-col gap-2.5">
-                {/* Step 1: Add Video or Share Screen */}
-                <li className="flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-slate-950/75 p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-400/20 font-mono text-[11px] font-bold text-sky-300">
-                      1
-                    </span>
-                    <span className="text-xs font-semibold text-slate-100">
-                      Add a video or screen
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      data-testid="select-video-button"
-                      onClick={openFilePicker}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 shadow-xs hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:bg-sky-500"
-                    >
-                      <span>Choose Video</span>
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="share-screen-button"
-                      onClick={() => {
-                        void startScreenShare();
-                      }}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700"
-                    >
-                      <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-                      <span>Share Screen</span>
-                    </button>
-                  </div>
-                </li>
-
-                {/* Step 2: Check Camera & Mic */}
-                <li className="flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-slate-950/75 p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    {isMicActive ? (
-                      <CheckCircleIcon className="h-5 w-5 shrink-0 text-emerald-400" />
-                    ) : (
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-800 font-mono text-[11px] font-bold text-slate-200">
-                        2
-                      </span>
-                    )}
-                    <span className="text-xs font-semibold text-slate-100">
-                      Check camera &amp; mic
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      data-testid="onboarding-camera-button"
-                      onClick={() => {
-                        void startCamera();
-                      }}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700"
-                    >
-                      <VideoCameraIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
-                      <span>Turn On Cam</span>
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="onboarding-mic-button"
-                      aria-pressed={isMicActive}
-                      onClick={() => {
-                        if (isMicActive) {
-                          stopMicrophone();
-                        } else {
-                          void startMicrophone();
-                        }
-                      }}
-                      className={
-                        isMicActive
-                          ? 'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-400/40 bg-emerald-400/15 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300'
-                          : 'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700'
-                      }
-                    >
-                      <MicrophoneIcon className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                      <span>{isMicActive ? 'Mic On' : 'Turn On Mic'}</span>
-                    </button>
-                  </div>
-                </li>
-
-                {/* Step 3: Hit Record */}
-                <li className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-slate-950/50 px-2.5 py-2 sm:px-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-400/20 font-mono text-[11px] font-bold text-rose-300">
-                    3
-                  </span>
-                  <p className="min-w-0 text-xs leading-snug text-slate-300">
-                    Press <strong className="text-white">Start Recording</strong>{' '}
-                    below — pause or rewind the video anytime while your
-                    reaction keeps rolling.
-                  </p>
-                </li>
-              </ol>
             </div>
           )}
 
@@ -1675,201 +1354,37 @@ export function SceneStagePanel() {
         </div>
       </div>
 
-      {/* Expandable PIP Framing & Styling Controls */}
-      {compositorState.layoutMode === 'pip' && isCustomizeOpen && (
-        <div
-          data-testid="pip-controls-bar"
-          className="flex flex-col gap-2.5 border-t border-white/[0.07] bg-slate-950/75 px-2.5 py-2.5 min-[375px]:px-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4"
-        >
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-xs font-medium text-slate-300">
-              Corner:
-            </span>
-            {PIP_CORNER_OPTIONS.map((corner) => (
-              <button
-                key={corner.id}
-                type="button"
-                data-testid={`pip-corner-${corner.id}`}
-                onClick={() => snapPipToCorner(corner.id)}
-                className="min-h-9 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 active:bg-slate-700 sm:min-h-8"
-              >
-                {corner.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              data-testid="pip-reset-button"
-              onClick={resetPipRect}
-              className="min-h-9 rounded-lg border border-white/10 bg-slate-800 px-2.5 py-1 text-xs font-medium text-sky-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 active:bg-slate-600 sm:min-h-8"
-            >
-              Reset PIP
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div
-              role="group"
-              aria-label="PIP webcam shape"
-              className="flex flex-wrap items-center gap-1"
-            >
-              {PIP_SHAPE_OPTIONS.map((shape) => {
-                const isSelected = compositorState.pipFrameShape === shape.id;
-                return (
-                  <button
-                    key={shape.id}
-                    type="button"
-                    data-testid={`pip-shape-${shape.id}`}
-                    aria-pressed={isSelected}
-                    onClick={() => setPipFrameShape(shape.id)}
-                    className={
-                      isSelected
-                        ? 'min-h-9 rounded-lg bg-sky-400 px-2.5 py-1 text-xs font-semibold text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-300 sm:min-h-8'
-                        : 'min-h-9 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 active:bg-slate-700 sm:min-h-8'
-                    }
-                  >
-                    {shape.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <select
-              data-testid="pip-border-select"
-              aria-label="PIP border style"
-              value={compositorState.pipBorderStyle}
-              onChange={handlePipBorderChange}
-              className="min-h-9 rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs font-medium text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 sm:min-h-8"
-            >
-              {PIP_BORDER_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex min-w-[12rem] flex-1 flex-wrap items-center gap-2 sm:flex-initial">
-              <label
-                htmlFor="pip-size-slider"
-                className="shrink-0 text-xs font-medium text-slate-300"
-              >
-                Size
-              </label>
-              <input
-                id="pip-size-slider"
-                data-testid="pip-size-slider"
-                type="range"
-                min={MIN_PIP_SIZE}
-                max={MAX_PIP_SIZE}
-                step={0.01}
-                value={compositorState.pipRect.width}
-                aria-valuetext={`${pipSizePercent} percent of scene width`}
-                onChange={handlePipSizeSliderChange}
-                className="h-2 min-w-[5rem] flex-1 cursor-pointer rounded-lg bg-slate-800 sm:w-28 sm:flex-initial"
-              />
-              <span
-                data-testid="pip-metrics-readout"
-                className="font-mono text-xs text-slate-200 tabular-nums"
-              >
-                X:{pipXPercent}% Y:{pipYPercent}% · {pipSizePercent}%
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Expandable Split / Shorts Ratio Controls */}
-      {(compositorState.layoutMode === 'side-by-side' ||
-        compositorState.layoutMode === 'top-bottom') &&
-        isCustomizeOpen && (
-          <div
-            data-testid="split-controls-bar"
-            className="flex flex-col gap-2 border-t border-white/[0.07] bg-slate-950/75 px-2.5 py-2.5 min-[375px]:px-3.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4"
-          >
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-1">
-              <label
-                htmlFor="split-ratio-slider"
-                className="shrink-0 text-xs font-medium text-slate-300"
-              >
-                Split Balance
-              </label>
-              <input
-                id="split-ratio-slider"
-                data-testid="split-ratio-slider"
-                type="range"
-                min={MIN_SPLIT_RATIO}
-                max={MAX_SPLIT_RATIO}
-                step={0.01}
-                value={compositorState.splitRatio}
-                aria-valuetext={`${splitLeftPercent} percent source video, ${splitRightPercent} percent webcam`}
-                onChange={handleSplitSliderChange}
-                className="h-2 min-w-[6rem] flex-1 cursor-pointer rounded-lg bg-slate-800 sm:max-w-[11rem]"
-              />
-              <span
-                data-testid="split-ratio-readout"
-                className="font-mono text-xs font-medium text-slate-100 tabular-nums"
-              >
-                {compositorState.layoutMode === 'top-bottom'
-                  ? `${splitLeftPercent}% Top Source / ${splitRightPercent}% Bottom Webcam`
-                  : `${splitLeftPercent}% Source / ${splitRightPercent}% Webcam`}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              data-testid="reset-split-button"
-              onClick={resetSplitRatio}
-              className="min-h-9 self-start rounded-lg border border-white/10 bg-slate-800 px-2.5 py-1 text-xs font-medium text-sky-300 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-400 active:bg-slate-600 sm:min-h-8 sm:self-auto"
-            >
-              Reset Split
-            </button>
-          </div>
-        )}
-
       {/* Contextual Source Media Bar (only shown once stage is active or a video is loaded) */}
       {!showCenteredEmptyPrompt && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] bg-slate-950/50 px-2.5 py-2.5 min-[375px]:px-3.5 sm:px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 bg-slate-950/40 px-2.5 py-2 min-[375px]:px-3.5 sm:px-4">
           <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
-            <span className="font-semibold text-sky-300">Video:</span>
             {playback.metadata ? (
               <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-slate-300">
                 {playback.sourceMode === 'screen' && (
                   <span
                     data-testid="live-screen-badge"
-                    className="inline-flex items-center gap-1 rounded-full border border-sky-400/40 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-200"
+                    className="inline-flex items-center gap-1 rounded-full border border-sky-400/35 bg-sky-400/10 px-2 py-0.5 text-[11px] font-medium text-sky-200"
                   >
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 rounded-full bg-sky-400"
-                    />
                     Live Screen
                   </span>
                 )}
                 <span
                   data-testid="loaded-file-name"
-                  className="min-w-0 break-all rounded-md border border-white/[0.07] bg-slate-900 px-2 py-0.5 font-medium text-slate-100 sm:break-words"
+                  className="min-w-0 break-all font-medium text-slate-200 sm:break-words"
                 >
                   {playback.metadata.fileName}
                 </span>
-                <span className="rounded-md bg-slate-800/80 px-1.5 py-0.5 font-mono text-slate-200">
+                <span className="font-mono text-slate-400">
                   {playback.metadata.width}×{playback.metadata.height}
                 </span>
-                {playback.sourceMode === 'screen' ? (
-                  <span className="rounded-md bg-slate-800/80 px-1.5 py-0.5 text-slate-200">
-                    {playback.hasScreenAudioTrack ? 'With Tab Sound' : 'Silent Screen'}
-                  </span>
-                ) : (
-                  <span className="rounded-md bg-slate-800/80 px-1.5 py-0.5 text-slate-200">
-                    {formatBytes(playback.metadata.fileSizeBytes)}
-                  </span>
-                )}
-                {playback.status === 'ended' && (
-                  <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
-                    Ended
+                {playback.sourceMode !== 'screen' && (
+                  <span className="text-slate-400">
+                    · {formatBytes(playback.metadata.fileSizeBytes)}
                   </span>
                 )}
               </div>
             ) : (
-              <span className="text-slate-300">No video selected yet</span>
+              <span className="text-slate-400">No video loaded</span>
             )}
           </div>
 
@@ -1880,7 +1395,7 @@ export function SceneStagePanel() {
                   type="button"
                   data-testid="select-video-button"
                   onClick={openFilePicker}
-                  className="min-h-9 rounded-lg bg-sky-400 px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:bg-sky-500"
+                  className="min-h-8 rounded-lg bg-sky-400 px-3 py-1 text-xs font-semibold text-slate-950 hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
                 >
                   Choose Video
                 </button>
@@ -1890,7 +1405,7 @@ export function SceneStagePanel() {
                   onClick={() => {
                     void startScreenShare();
                   }}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700"
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-200 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
                 >
                   <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
                   <span>Share Screen</span>
@@ -1904,7 +1419,7 @@ export function SceneStagePanel() {
                   onClick={() => {
                     void startScreenShare();
                   }}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700"
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
                 >
                   <ScreenShareIcon className="h-3.5 w-3.5 shrink-0 text-sky-300" />
                   <span>
@@ -1917,7 +1432,7 @@ export function SceneStagePanel() {
                   type="button"
                   data-testid="replace-video-button"
                   onClick={openFilePicker}
-                  className="min-h-9 rounded-lg border border-white/10 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-700"
+                  className="min-h-8 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
                 >
                   Change Video
                 </button>
@@ -1925,7 +1440,7 @@ export function SceneStagePanel() {
                   type="button"
                   data-testid="unload-video-button"
                   onClick={unload}
-                  className="min-h-9 rounded-lg border border-white/10 bg-slate-950 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 active:bg-slate-800"
+                  className="min-h-8 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs text-slate-300 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
                 >
                   {playback.sourceMode === 'screen' ? 'Stop Share' : 'Remove'}
                 </button>
